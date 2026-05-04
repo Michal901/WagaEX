@@ -251,11 +251,13 @@ export function drukujListeProduktow(lista, tytul, data) {
   window.print();
 }
 
-export function drukujZbiorcza(appState) {
+export async function drukujZbiorcza(appState) {
   if (!appState.biezacaSesja.length) {
     toast("Brak norm w sesji", true);
     return;
   }
+
+  await zapiszZbiorowkeDoHistorii(appState);
 
   const lista = agregujProdukty(appState.biezacaSesja);
   const totalKg = lista.reduce((s, p) => s + p.waga * p.iloscTotal, 0);
@@ -324,6 +326,45 @@ export function drukujZbiorcza(appState) {
       </table>
     </div>`;
   window.print();
+}
+
+export async function zapiszZbiorowkeDoHistorii(appState) {
+  if (!appState.biezacaSesja.length) {
+    toast("Brak norm w sesji", true);
+    return null;
+  }
+
+  const totalKg = parseFloat(
+    appState.biezacaSesja.reduce((s, n) => s + n.totalKg, 0).toFixed(2),
+  );
+
+  const sesja = {
+    id: crypto.randomUUID(),
+    nr: appState.historia.length + 1,
+    data: new Date().toISOString(),
+    normy: appState.biezacaSesja.map((n) => ({
+      ...n,
+      produkty: n.produkty.map((p) => ({ ...p })),
+    })),
+    totalKg,
+  };
+
+  await appState.addToHistoria(sesja);
+  await appState.updateBaza(
+    appState.biezacaSesja.flatMap((n) =>
+      n.produkty.map((p) => ({ ...p, ilosc: p.iloscX })),
+    ),
+    sesja.data,
+  );
+
+  const prevStat = Number(await appState.storage.load("stat", 0)) || 0;
+  await appState.storage.save("stat", prevStat + 1);
+
+  aktualizujBadge(appState);
+  renderHistorie(appState);
+  toast(`✓ Zbiorówka zapisana do historii jako #${sesja.nr}`);
+
+  return sesja;
 }
 
 export async function zapiszSesje(appState) {

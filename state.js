@@ -9,18 +9,24 @@ export class AppState {
   }
 
   async init() {
-    this.historia = await this.storage.load("historia", []);
-    this.baza = await this.storage.load("baza", {});
+    const historia = await this.storage.load("historia", []);
+    this.historia = Array.isArray(historia) ? historia : [];
+
+    const baza = await this.storage.load("baza", {});
+    this.baza = baza && typeof baza === "object" && !Array.isArray(baza) ? baza : {};
   }
 
   async saveToStorage() {
     await Promise.all([
-      this.storage.save("historia", this.historia),
-      this.storage.save("baza", this.baza),
+      this.storage.save("historia", Array.isArray(this.historia) ? this.historia : []),
+      this.storage.save("baza", this.baza && typeof this.baza === "object" ? this.baza : {}),
     ]);
   }
 
   async addToHistoria(sesja) {
+    if (!Array.isArray(this.historia)) {
+      this.historia = [];
+    }
     this.historia.push(sesja);
     await this.saveToStorage();
   }

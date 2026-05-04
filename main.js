@@ -55,6 +55,27 @@ window.usunSesje = (id) => usunSesje(appState, id);
 window.drukujHistoriaSesje = (id) => drukujHistoriaSesje(appState, id);
 
 // =========================
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest(".btn-usun-baza");
+  if (!btn) return;
+
+  const id = btn.dataset.id;
+
+  // 1. usuń z Supabase
+  await appState.storage.deleteFromBaza(id);
+
+  // 2. usuń lokalnie
+  delete appState.baza[id];
+
+  // 3. zapis lokalny statyczny
+  appState.saveToStorage();
+
+  // 4. UI refresh
+  renderBaze(appState);
+  aktualizujBadge(appState);
+
+  toast("Produkt usunięty");
+});
 async function init() {
   await syncBaza();
 

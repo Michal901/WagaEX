@@ -490,52 +490,62 @@ export function drukujHistoriaSesje(appState, id) {
 
 export function renderBaze(appState) {
   const el = document.getElementById("baza-lista");
+
   const q = (document.getElementById("bazaSzukaj")?.value || "")
     .toLowerCase()
     .trim();
+
   let entries = Object.values(appState.baza);
-  if (q) entries = entries.filter((p) => p.nazwa.toLowerCase().includes(q));
+
+  if (q) {
+    entries = entries.filter((p) => p.nazwa.toLowerCase().includes(q));
+  }
+
   entries.sort((a, b) => new Date(b.ostatnioUzyta) - new Date(a.ostatnioUzyta));
 
   if (!entries.length) {
-    el.innerHTML = `<div class="baza-empty"><div class="big">◈</div>${q ? "Brak wyników." : "Baza jest pusta. Zapisz sesję."}</div>`;
+    el.innerHTML = `
+      <div class="baza-empty">
+        <div class="big">◈</div>
+        ${q ? "Brak wyników." : "Baza jest pusta. Zapisz sesję."}
+      </div>`;
     return;
   }
 
   const rows = entries
     .map((p, i) => {
-      const d = new Date(p.ostatnioUzyta).toLocaleString("pl-PL", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      });
-      const key = p.nazwa.toLowerCase().trim();
-      return `<tr>
-      <td class="mono" style="color:var(--text3);font-size:11px">${i + 1}</td>
-      <td>${esc(p.nazwa)}</td>
-      <td class="center mono">${p.waga} kg</td>
-      <td class="center" style="color:var(--text3);font-size:12px">${d}</td>
-      <td class="center"><button class="btn-ghost-sm btn-usun-baza" data-key="${esc(key)}">🗑</button></td>
-    </tr>`;
+      const d = new Date(p.ostatnioUzyta).toLocaleString("pl-PL");
+
+      return `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${esc(p.nazwa)}</td>
+          <td class="center">${p.waga} kg</td>
+          <td class="center">${d}</td>
+          <td class="center">
+            <button class="btn-ghost-sm btn-usun-baza" data-id="${p.id}">
+              🗑
+            </button>
+          </td>
+        </tr>
+      `;
     })
     .join("");
 
   el.innerHTML = `
     <table class="results-table">
       <thead>
-        <tr><th>#</th><th>Nazwa produktu</th><th class="center">Waga jedn. (kg)</th><th class="center">Ostatnio używana</th><th class="center"></th></tr>
+        <tr>
+          <th>#</th>
+          <th>Nazwa</th>
+          <th class="center">Waga</th>
+          <th class="center">Ostatnio</th>
+          <th></th>
+        </tr>
       </thead>
       <tbody>${rows}</tbody>
     </table>
-    <div style="margin-top:10px;color:var(--text3);font-size:12px;text-align:right">${entries.length} produktów w bazie</div>`;
-
-  // Event delegation dla usuwania produktów
-  el.addEventListener("click", (e) => {
-    const btn = e.target.closest(".btn-usun-baza");
-    if (btn) {
-      usunZBazy(appState, btn.dataset.key);
-    }
-  });
+  `;
 }
 
 export function usunZBazy(appState, key) {

@@ -13,12 +13,15 @@ export class StorageManager {
     };
   }
 
+  // =========================
+  // LOCAL STORAGE (historia/stat)
+  // =========================
   async save(key, value) {
     if (key === "baza") {
-      await this.saveBaza(value);
-    } else {
-      localStorage.setItem(this.keys[key], JSON.stringify(value));
+      return await this.saveBaza(value);
     }
+
+    localStorage.setItem(this.keys[key], JSON.stringify(value));
   }
 
   async load(key, defaultValue = null) {
@@ -35,23 +38,7 @@ export class StorageManager {
   }
 
   // =========================
-  // SAVE
-  // =========================
-  async saveBaza(baza) {
-    const rows = Object.entries(baza).map(([id, p]) => ({
-      id,
-      nazwa: p.nazwa,
-      waga: p.waga,
-      ostatnio_uzyta: p.ostatnioUzyta,
-    }));
-
-    const { error } = await supabase.from("products").upsert(rows);
-
-    if (error) console.error("Supabase save error:", error);
-  }
-
-  // =========================
-  // LOAD
+  // SUPABASE LOAD
   // =========================
   async loadBaza(defaultValue = {}) {
     const { data, error } = await supabase
@@ -60,18 +47,16 @@ export class StorageManager {
       .order("ostatnio_uzyta", { ascending: false });
 
     if (error) {
-      console.error("Supabase load error:", error);
+      console.error("Supabase LOAD error:", error);
       return defaultValue;
     }
 
-    if (!data) return defaultValue;
-
     const result = {};
 
-    data.forEach((p) => {
+    (data || []).forEach((p) => {
       result[p.id] = {
         nazwa: p.nazwa,
-        waga: p.waga,
+        waga: Number(p.waga),
         ostatnioUzyta: p.ostatnio_uzyta,
       };
     });
@@ -80,13 +65,33 @@ export class StorageManager {
   }
 
   // =========================
-  // DELETE (🔥 FIX)
+  // SUPABASE UPSERT (SAVE)
   // =========================
-  async deleteProdukt(id) {
+  async saveBaza(baza) {
+    const rows = Object.entries(baza).map(([id, p]) => ({
+      id,
+      nazwa: p.nazwa,
+      waga: Number(p.waga),
+      ostatnio_uzyta: p.ostatnioUzyta,
+    }));
+
+    const { error } = await supabase
+      .from("products")
+      .upsert(rows, { onConflict: "id" });
+
+    if (error) {
+      console.error("Supabase SAVE error:", error);
+    }
+  }
+
+  // =========================
+  // 🔥 DELETE (MISSING BEFORE)
+  // =========================
+  async deleteFromBaza(id) {
     const { error } = await supabase.from("products").delete().eq("id", id);
 
     if (error) {
-      console.error("Supabase delete error:", error);
+      console.error("Supabase DELETE error:", error);
     }
   }
 }

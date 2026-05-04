@@ -1,452 +1,7 @@
-// =====================================================
-//  WagaEX – main.js (punkt wejścia aplikacji)
-//  Flow: norma → oblicz → dodaj do sesji (max 8)
-//        → zbiorówka (suma wszystkich norm) → drukuj
-// =====================================================
+// ===== UI MODULE =====
+import { esc, toast } from "./utils.js";
 
-import {
-  aktualizujHint,
-  obliczWage,
-  wyczyscFormularz,
-  zmienMnoznik,
-} from "./calculator.js";
-import { AppState } from "./state.js";
-import { StorageManager } from "./storage.js";
-import {
-  aktualizujBadge,
-  drukujHistoriaSesje,
-  drukujNorme,
-  drukujNormeZSesji,
-  drukujZbiorcza,
-  renderBaze,
-  renderHistorie,
-  renderSesjaChips,
-  renderZbiorcza,
-  resetSesji,
-  toggleSesja,
-  usunNorme,
-  usunSesje,
-  usunZBazy,
-  wyczyscHistorie,
-  zapiszSesje,
-} from "./ui.js";
-import { toast } from "./utils.js";
-
-// Initialize global instances
-const storage = new StorageManager();
-const appState = new AppState(storage);
-
-// ===== INIT =====
-document.addEventListener("DOMContentLoaded", () => {
-  // Nawigacja
-  document.querySelectorAll(".nav-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      document
-        .querySelectorAll(".nav-btn")
-        .forEach((b) => b.classList.remove("active"));
-      document
-        .querySelectorAll(".tab-content")
-        .forEach((t) => t.classList.remove("active"));
-      btn.classList.add("active");
-      const tab = btn.dataset.tab;
-      document.getElementById("tab-" + tab).classList.add("active");
-      if (tab === "zbiorcza") renderZbiorcza(appState);
-      if (tab === "historia") renderHistorie(appState);
-      if (tab === "baza") renderBaze(appState);
-    });
-  });
-
-  // Liczba norm (mnożnik)
-  document
-    .getElementById("btnMinus")
-    .addEventListener("click", () => zmienMnoznik(1));
-  document
-    .getElementById("btnPlus")
-    .addEventListener("click", () => zmienMnoznik(-1));
-  document
-    .getElementById("multiplier")
-    .addEventListener("input", aktualizujHint);
-  aktualizujHint();
-
-  // Kalkulator
-  document
-    .getElementById("btnOblicz")
-    .addEventListener("click", () => obliczWage(appState));
-  document
-    .getElementById("btnWyczysc")
-    .addEventListener("click", () => wyczyscFormularz(appState));
-  document
-    .getElementById("btnDodajDoSesji")
-    .addEventListener("click", () => dodajDoSesji(appState));
-  document
-    .getElementById("btnDrukujNorme")
-    .addEventListener("click", () => drukujNorme(appState));
-  document
-    .getElementById("btnResetSesji")
-    .addEventListener("click", () => resetSesji(appState));
-  document.getElementById("btnIdZbiorówka").addEventListener("click", () => {
-    document
-      .querySelectorAll(".nav-btn")
-      .forEach((b) => b.classList.remove("active"));
-    document
-      .querySelectorAll(".tab-content")
-      .forEach((t) => t.classList.remove("active"));
-    document.querySelector('[data-tab="zbiorcza"]').classList.add("active");
-    document.getElementById("tab-zbiorcza").classList.add("active");
-    renderZbiorcza(appState);
-  });
-
-  // Zbiorówka
-  document
-    .getElementById("btnDrukujZbiorcza")
-    .addEventListener("click", () => drukujZbiorcza(appState));
-  document
-    .getElementById("btnZapiszSesje")
-    .addEventListener("click", () => zapiszSesje(appState, storage));
-
-  // Historia
-  document
-    .getElementById("btnWyczyscHistorie")
-    .addEventListener("click", () => wyczyscHistorie(appState));
-
-  // Baza search
-  document
-    .getElementById("bazaSzukaj")
-    .addEventListener("input", () => renderBaze(appState));
-
-  aktualizujBadge(appState);
-});
-
-// Funkcje globalne dla onclick w HTML
-window.drukujNormeZSesji = (id) => drukujNormeZSesji(appState, id);
-window.usunNorme = (id) => usunNorme(appState, id);
-window.toggleSesja = toggleSesja;
-window.usunSesje = (id) => usunSesje(appState, id);
-window.drukujHistoriaSesje = (id) => drukujHistoriaSesje(appState, id);
-window.usunZBazy = (key) => usunZBazy(appState, key);
-
-// ===== UTILS =====
-const esc = (s) =>
-  String(s)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-function toast(msg, err = false) {
-  const t = document.getElementById("toast");
-  t.textContent = msg;
-  t.className = "toast show" + (err ? " error" : "");
-  clearTimeout(t._t);
-  t._t = setTimeout(() => {
-    t.className = "toast";
-  }, 3200);
-}
-
-// ===== INIT =====
-document.addEventListener("DOMContentLoaded", () => {
-  // Nawigacja
-  document.querySelectorAll(".nav-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      document
-        .querySelectorAll(".nav-btn")
-        .forEach((b) => b.classList.remove("active"));
-      document
-        .querySelectorAll(".tab-content")
-        .forEach((t) => t.classList.remove("active"));
-      btn.classList.add("active");
-      const tab = btn.dataset.tab;
-      document.getElementById("tab-" + tab).classList.add("active");
-      if (tab === "zbiorcza") renderZbiorcza();
-      if (tab === "historia") renderHistorie();
-      if (tab === "baza") renderBaze();
-    });
-  });
-
-  // Liczba norm (mnożnik)
-  document
-    .getElementById("btnMinus")
-    .addEventListener("click", () => zmienMnoznik(-1));
-  document
-    .getElementById("btnPlus")
-    .addEventListener("click", () => zmienMnoznik(1));
-  document
-    .getElementById("multiplier")
-    .addEventListener("input", aktualizujHint);
-  aktualizujHint();
-
-  // Kalkulator
-  document.getElementById("btnOblicz").addEventListener("click", obliczWage);
-  document
-    .getElementById("btnWyczysc")
-    .addEventListener("click", wyczyscFormularz);
-  document
-    .getElementById("btnDodajDoSesji")
-    .addEventListener("click", dodajDoSesji);
-  document
-    .getElementById("btnDrukujNorme")
-    .addEventListener("click", drukujNorme);
-  document
-    .getElementById("btnResetSesji")
-    .addEventListener("click", resetSesji);
-  document.getElementById("btnIdZbiorówka").addEventListener("click", () => {
-    document
-      .querySelectorAll(".nav-btn")
-      .forEach((b) => b.classList.remove("active"));
-    document
-      .querySelectorAll(".tab-content")
-      .forEach((t) => t.classList.remove("active"));
-    document.querySelector('[data-tab="zbiorcza"]').classList.add("active");
-    document.getElementById("tab-zbiorcza").classList.add("active");
-    renderZbiorcza();
-  });
-
-  // Zbiorówka
-  document
-    .getElementById("btnDrukujZbiorcza")
-    .addEventListener("click", drukujZbiorcza);
-  document
-    .getElementById("btnZapiszSesje")
-    .addEventListener("click", zapiszSesje);
-
-  // Historia
-  document
-    .getElementById("btnWyczyscHistorie")
-    .addEventListener("click", wyczyscHistorie);
-
-  // Baza search
-  document.getElementById("bazaSzukaj").addEventListener("input", renderBaze);
-
-  aktualizujBadge();
-});
-
-// ===== LICZBA NORM =====
-function zmienMnoznik(d) {
-  const el = document.getElementById("multiplier");
-  el.value = Math.max(1, Math.min(8, (parseInt(el.value) || 1) + d));
-  aktualizujHint();
-}
-function aktualizujHint() {
-  const v = parseInt(document.getElementById("multiplier").value) || 1;
-  const hint = document.getElementById("mult-hint");
-  hint.textContent =
-    v === 1
-      ? "Jedna norma (brak mnożenia ilości)"
-      : `${v} identycznych norm — ilości ×${v}`;
-  hint.style.color = v > 1 ? "var(--accent)" : "var(--text3)";
-}
-function getMnoznik() {
-  return Math.max(
-    1,
-    parseInt(document.getElementById("multiplier").value) || 1,
-  );
-}
-
-// ===== PARSOWANIE LINII =====
-function parsujLinie(line) {
-  const t = line.trim();
-  if (!t) return null;
-
-  // Ilość po tabulatorze
-  const parts = t.split(/\t/);
-  let iloscStr = null,
-    reszta = t;
-  if (parts.length >= 2) {
-    iloscStr = parts[parts.length - 1].trim();
-    reszta = parts.slice(0, -1).join("\t").trim();
-  }
-
-  // Waga: ostatnie wystąpienie LICZBA kg
-  const wagaAll = [...reszta.matchAll(/(-?\d+[.,]?\d*)\s*kg/gi)];
-  if (!wagaAll.length) return { blad: 'Brak wagi (brak "kg")', linia: t };
-  const wm = wagaAll[wagaAll.length - 1];
-  const waga = parseFloat(wm[1].replace(",", "."));
-
-  // Ilość – jeśli nie z tabulatora, szukaj po wadze lub na końcu
-  if (!iloscStr) {
-    const after = reszta.slice(wm.index + wm[0].length).trim();
-    if (after && /^[\d.,]+$/.test(after)) {
-      iloscStr = after;
-    }
-  }
-  if (!iloscStr) return { blad: "Brak ilości", linia: t };
-
-  const ilosc = parseFloat(iloscStr.replace(",", "."));
-  if (isNaN(waga) || waga <= 0) return { blad: "Waga ≤ 0", linia: t };
-  if (isNaN(ilosc) || ilosc <= 0) return { blad: "Ilość ≤ 0", linia: t };
-
-  // Nazwa: wszystko przed wagą w reszta
-  const nazwa = reszta.slice(0, wm.index).trim() || reszta;
-  return { nazwa, waga, ilosc, linia: t };
-}
-
-// ===== OBLICZ WAGĘ =====
-function obliczWage() {
-  const text = document.getElementById("inputText").value.trim();
-  if (!text) {
-    toast("Wklej dane normy do pola tekstowego", true);
-    return;
-  }
-
-  const mult = getMnoznik();
-  let bledy = [],
-    produkty = [];
-
-  for (const line of text.split("\n")) {
-    if (!line.trim()) continue;
-    const r = parsujLinie(line);
-    if (!r) continue;
-    if (r.blad) {
-      bledy.push(r);
-      continue;
-    }
-    produkty.push({ ...r, iloscX: r.ilosc * mult });
-  }
-
-  if (bledy.length) {
-    let h =
-      '<div class="bledne-info"><strong>❌ Błędy – popraw dane i spróbuj ponownie:</strong>';
-    bledy.forEach((b) => {
-      h += `<div class="bledna-linia">• ${esc(b.linia)} &rarr; ${b.blad}</div>`;
-    });
-    h += "</div>";
-    document.getElementById("wyniki-tabela").innerHTML = h;
-    document.getElementById("wyniki-suma").innerHTML = "";
-    document.getElementById("wyniki-wrap").style.display = "block";
-    appState.aktualneWyniki = null;
-    return;
-  }
-
-  if (!produkty.length) {
-    toast("Brak rozpoznanych produktów", true);
-    return;
-  }
-
-  appState.aktualneWyniki = { produkty, mult, data: new Date().toISOString() };
-  renderWyniki(produkty, mult);
-  dodajDoSesji();
-}
-
-// ===== RENDER WYNIKI NORMY =====
-function renderWyniki(produkty, mult) {
-  let t1 = 0,
-    tN = 0,
-    rows = "";
-
-  produkty.forEach((p, i) => {
-    const wX1 = p.waga * p.ilosc;
-    const wXN = p.waga * p.iloscX;
-    t1 += wX1;
-    tN += wXN;
-
-    const ilCell =
-      mult > 1
-        ? `<span style="color:var(--text3)">${p.ilosc}×${mult}=</span> <strong>${p.iloscX}</strong>`
-        : `<strong>${p.ilosc}</strong>`;
-
-    rows += `<tr>
-      <td class="mono" style="color:var(--text3);font-size:11px">${i + 1}</td>
-      <td>${esc(p.nazwa)}</td>
-      <td class="center mono">${ilCell}</td>
-      <td class="center mono">${p.waga} kg</td>
-      <td class="right mono"><strong>${wXN.toFixed(2)} kg</strong></td>
-    </tr>`;
-  });
-
-  document.getElementById("wyniki-tabela").innerHTML = `
-    <table class="results-table">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Nazwa produktu</th>
-          <th class="center">Ilość${mult > 1 ? " (×" + mult + ")" : ""}</th>
-          <th class="center">Waga jedn.</th>
-          <th class="right">Waga łączna</th>
-        </tr>
-      </thead>
-      <tbody>${rows}</tbody>
-      <tfoot>
-        <tr>
-          <td colspan="4" class="right">Suma normy${mult > 1 ? " ×" + mult : ""}:</td>
-          <td class="right">${tN.toFixed(2)} kg</td>
-        </tr>
-      </tfoot>
-    </table>`;
-
-  const over50 = tN > 50;
-  const sumaEl = document.getElementById("wyniki-suma");
-  sumaEl.className = "suma-box" + (over50 ? " warn" : "");
-  sumaEl.innerHTML =
-    mult > 1
-      ? `<span style="opacity:.7;font-size:12px">1 norma: ${t1.toFixed(2)} kg &nbsp;|&nbsp;</span>×${mult}: <strong>${tN.toFixed(2)} kg</strong>${over50 ? " ⚠️ >50kg" : ""}`
-      : `Waga normy: <strong>${tN.toFixed(2)} kg</strong>${over50 ? " ⚠️ >50kg" : ""}`;
-
-  document.getElementById("wyniki-wrap").style.display = "block";
-}
-
-// ===== DODAJ DO SESJI =====
-function dodajDoSesji() {
-  if (!appState.aktualneWyniki) {
-    toast("Najpierw oblicz normę", true);
-    return;
-  }
-
-  const { produkty, mult } = appState.aktualneWyniki;
-
-  if (appState.biezacaSesja.length + mult > 8) {
-    toast(
-      `Za dużo norm – zostało miejsce na ${8 - appState.biezacaSesja.length}, a chcesz dodać ${mult}`,
-      true,
-    );
-    return;
-  }
-
-  // Każda norma ma oryginalne ilości (bez mnożnika)
-  const produktyJednej = produkty.map((p) => ({
-    nazwa: p.nazwa,
-    waga: p.waga,
-    ilosc: p.ilosc,
-    iloscX: p.ilosc,
-  }));
-  const totalKgJednej = parseFloat(
-    produktyJednej.reduce((s, p) => s + p.waga * p.ilosc, 0).toFixed(2),
-  );
-  const now = new Date().toISOString();
-
-  for (let i = 0; i < mult; i++) {
-    const nr = appState.biezacaSesja.length + 1;
-    appState.biezacaSesja.push({
-      id: Date.now() + i,
-      nr,
-      label: `Norma ${nr}`,
-      multiplier: 1,
-      produkty: produktyJednej.map((p) => ({ ...p })),
-      totalKg: totalKgJednej,
-    });
-  }
-
-  // Aktualizuj bazę produktów
-  appState.updateBaza(
-    produktyJednej.map((p) => ({ ...p, ilosc: p.ilosc * mult })),
-    now,
-  );
-
-  aktualizujBadge();
-  renderSesjaChips();
-
-  document.getElementById("inputText").value = "";
-  document.getElementById("multiplier").value = 1;
-  document.getElementById("wyniki-wrap").style.display = "none";
-  appState.aktualneWyniki = null;
-  aktualizujHint();
-
-  const dodano = mult > 1 ? `${mult} normy` : `1 norma`;
-  toast(
-    `✓ Dodano ${dodano} po ${totalKgJednej.toFixed(2)} kg – wklej kolejną lub przejdź do zbiorówki`,
-  );
-}
-
-// ===== RENDER CHIPS SESJI =====
-function renderSesjaChips() {
+export function renderSesjaChips(appState) {
   const pasek = document.getElementById("sesja-pasek");
   if (!appState.biezacaSesja.length) {
     pasek.style.display = "none";
@@ -480,8 +35,7 @@ function renderSesjaChips() {
     `Łączna waga sesji: <strong>${totalAll.toFixed(2)} kg</strong>`;
 }
 
-// ===== USUŃ NORMĘ =====
-function usunNorme(id) {
+export function usunNorme(appState, id) {
   appState.biezacaSesja = appState.biezacaSesja.filter((n) => n.id !== id);
   // Przenumeruj
   appState.biezacaSesja.forEach((n, i) => {
@@ -489,17 +43,16 @@ function usunNorme(id) {
     n.label =
       n.multiplier > 1 ? `Norma ${i + 1} (×${n.multiplier})` : `Norma ${i + 1}`;
   });
-  aktualizujBadge();
-  renderSesjaChips();
+  aktualizujBadge(appState);
+  renderSesjaChips(appState);
 }
 
-// ===== RESET SESJI =====
-function resetSesji() {
+export function resetSesji(appState) {
   if (!confirm("Wyczyścić bieżącą sesję (wszystkie normy)?")) return;
   appState.biezacaSesja = [];
   appState.aktualneWyniki = null;
-  aktualizujBadge();
-  renderSesjaChips();
+  aktualizujBadge(appState);
+  renderSesjaChips(appState);
   document.getElementById("wyniki-wrap").style.display = "none";
   document.getElementById("inputText").value = "";
   document.getElementById("multiplier").value = 1;
@@ -507,8 +60,7 @@ function resetSesji() {
   toast("Sesja wyczyszczona");
 }
 
-// ===== ZBIORÓWKA =====
-function renderZbiorcza() {
+export function renderZbiorcza(appState) {
   const el = document.getElementById("zbiorcza-content");
   if (!appState.biezacaSesja.length) {
     el.innerHTML =
@@ -578,8 +130,7 @@ function renderZbiorcza() {
     </div>`;
 }
 
-// ===== DRUKUJ NORMĘ (bieżąca obliczona) =====
-function drukujNorme() {
+export function drukujNorme(appState) {
   if (!appState.aktualneWyniki) {
     toast("Najpierw oblicz normę", true);
     return;
@@ -596,8 +147,7 @@ function drukujNorme() {
   );
 }
 
-// ===== DRUKUJ NORMĘ Z SESJI (po id) =====
-function drukujNormeZSesji(id) {
+export function drukujNormeZSesji(appState, id) {
   const n = appState.biezacaSesja.find((x) => x.id === id);
   if (!n) return;
   drukujListeProduktow(
@@ -611,8 +161,7 @@ function drukujNormeZSesji(id) {
   );
 }
 
-// ===== WSPÓLNA FUNKCJA DRUKU TABELI =====
-function drukujListeProduktow(lista, tytul, data) {
+export function drukujListeProduktow(lista, tytul, data) {
   const posortowana = [...lista].sort(
     (a, b) => b.waga * b.iloscTotal - a.waga * a.iloscTotal,
   );
@@ -679,8 +228,7 @@ function drukujListeProduktow(lista, tytul, data) {
   window.print();
 }
 
-// ===== DRUKUJ ZBIORÓWKĘ =====
-function drukujZbiorcza() {
+export function drukujZbiorcza(appState) {
   if (!appState.biezacaSesja.length) {
     toast("Brak norm w sesji", true);
     return;
@@ -705,34 +253,64 @@ function drukujZbiorcza() {
     .map((n) => `${n.label}: ${n.totalKg.toFixed(2)} kg`)
     .join(" | ");
 
+  const S = {
+    wrap: "font-family:Arial,sans-serif;font-size:12px;color:#000;padding:10px;",
+    title: "font-size:14px;font-weight:bold;margin-bottom:10px;",
+    table: "width:100%;border-collapse:collapse;font-size:12px;margin-top:10px;",
+    thCheck: "border:1px solid #999;padding:6px 8px;text-align:center;width:24px;font-weight:bold;background:#f0f0f0;",
+    th: "border:1px solid #999;padding:6px 8px;text-align:left;font-weight:bold;background:#f0f0f0;",
+    thC: "border:1px solid #999;padding:6px 8px;text-align:center;font-weight:bold;background:#f0f0f0;",
+    thR: "border:1px solid #999;padding:6px 8px;text-align:right;font-weight:bold;background:#f0f0f0;",
+    tdCheck: "border:1px solid #999;padding:6px 8px;text-align:center;width:24px;",
+    td: "border:1px solid #999;padding:6px 8px;text-align:left;",
+    tdC: "border:1px solid #999;padding:6px 8px;text-align:center;",
+    tdR: "border:1px solid #999;padding:6px 8px;text-align:right;font-weight:bold;",
+    tfTd: "border-top:2px solid #333;padding:6px 8px;text-align:right;font-weight:bold;border-left:none;border-right:none;border-bottom:none;",
+    tfTdR: "border-top:2px solid #333;padding:6px 8px;text-align:right;font-weight:bold;",
+  };
+
   const rows = lista
     .map(
       (p, i) => `
     <tr>
-      <td>${i + 1}</td>
-      <td>${esc(p.nazwa)}</td>
-      <td style="text-align:center">${p.iloscTotal}</td>
-      <td style="text-align:center">${p.waga}</td>
-      <td style="text-align:right">${(p.waga * p.iloscTotal).toFixed(2)}</td>
+      <td style="${S.tdCheck}"><input type="checkbox" style="width:12px;height:12px;margin:0;border:1px solid #000;"/></td>
+      <td style="${S.td}">${i + 1}</td>
+      <td style="${S.td}">${esc(p.nazwa)}</td>
+      <td style="${S.tdC}">${p.iloscTotal}</td>
+      <td style="${S.tdC}">${p.waga}</td>
+      <td style="${S.tdR}">${(p.waga * p.iloscTotal).toFixed(2)}</td>
     </tr>`,
     )
     .join("");
 
   document.getElementById("printArea").innerHTML = `
-    <h2>Zbiorówka – ${appState.biezacaSesja.length} norm</h2>
-    <div class="print-date">Data: ${d}</div>
-    <div class="print-normy">${normaInfo}</div>
-
-    <table>
-      <thead><tr><th>#</th><th>Nazwa produktu</th><th style="text-align:center">Łączna ilość</th><th style="text-align:center">Waga jedn. (kg)</th><th style="text-align:right">Waga łączna (kg)</th></tr></thead>
-      <tbody>${rows}</tbody>
-      <tfoot><tr><td colspan="4" style="text-align:right">Łączna waga:</td><td style="text-align:right">${totalKg.toFixed(2)} kg</td></tr></tfoot>
-    </table>`;
+    <div style="${S.wrap}">
+      <div style="${S.title}">Zbiorówka – ${appState.biezacaSesja.length} norm</div>
+      <div style="margin-bottom:8px;">Data: ${d}</div>
+      <table style="${S.table}">
+        <thead>
+          <tr>
+            <th style="${S.thCheck}">✓</th>
+            <th style="${S.th}">#</th>
+            <th style="${S.th}">Nazwa produktu</th>
+            <th style="${S.thC}">Łączna ilość</th>
+            <th style="${S.thC}">Waga jedn. (kg)</th>
+            <th style="${S.thR}">Waga łączna (kg)</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+        <tfoot>
+          <tr>
+            <td colspan="5" style="${S.tfTd}">Łączna waga:</td>
+            <td style="${S.tfTdR}">${totalKg.toFixed(2)} kg</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>`;
   window.print();
 }
 
-// ===== ZAPISZ SESJĘ DO HISTORII =====
-function zapiszSesje() {
+export function zapiszSesje(appState, storage) {
   if (!appState.biezacaSesja.length) {
     toast("Brak norm do zapisania", true);
     return;
@@ -764,15 +342,14 @@ function zapiszSesje() {
   // Reset sesji po zapisaniu
   appState.biezacaSesja = [];
   appState.aktualneWyniki = null;
-  aktualizujBadge();
-  renderSesjaChips();
+  aktualizujBadge(appState);
+  renderSesjaChips(appState);
   document.getElementById("wyniki-wrap").style.display = "none";
 
   toast(`✓ Sesja #${sesja.nr} zapisana do historii`);
 }
 
-// ===== HISTORIA =====
-function renderHistorie() {
+export function renderHistorie(appState) {
   const el = document.getElementById("historia-lista");
   if (!appState.historia.length) {
     el.innerHTML =
@@ -848,27 +425,30 @@ function renderHistorie() {
     .join("");
 }
 
-function toggleSesja(id) {
+export function toggleSesja(id) {
   document.getElementById("body-" + id).classList.toggle("open");
   document.getElementById("tog-" + id).classList.toggle("open");
 }
-function usunSesje(id) {
+
+export function usunSesje(appState, id) {
   appState.historia = appState.historia.filter((s) => s.id !== id);
   appState.saveToStorage();
-  aktualizujBadge();
-  renderHistorie();
+  aktualizujBadge(appState);
+  renderHistorie(appState);
   toast("Sesja usunięta");
 }
-function wyczyscHistorie() {
+
+export function wyczyscHistorie(appState) {
   if (!confirm("Usunąć całą historię sesji?")) return;
   appState.historia = [];
   appState.saveToStorage();
-  aktualizujBadge();
-  renderHistorie();
+  aktualizujBadge(appState);
+  renderHistorie(appState);
   toast("Historia wyczyszczona");
 }
-function drukujHistoriaSesje(id) {
-  const s = historia.find((x) => x.id === id);
+
+export function drukujHistoriaSesje(appState, id) {
+  const s = appState.historia.find((x) => x.id === id);
   if (!s || !s.normy) return;
 
   const mapa = {};
@@ -913,8 +493,7 @@ function drukujHistoriaSesje(id) {
   window.print();
 }
 
-// ===== BAZA =====
-function renderBaze() {
+export function renderBaze(appState) {
   const el = document.getElementById("baza-lista");
   const q = (document.getElementById("bazaSzukaj")?.value || "")
     .toLowerCase()
@@ -957,25 +536,15 @@ function renderBaze() {
     <div style="margin-top:10px;color:var(--text3);font-size:12px;text-align:right">${entries.length} produktów w bazie</div>`;
 }
 
-function usunZBazy(key) {
+export function usunZBazy(appState, key) {
   delete appState.baza[key];
   appState.saveToStorage();
-  aktualizujBadge();
-  renderBaze();
+  aktualizujBadge(appState);
+  renderBaze(appState);
   toast("Produkt usunięty z bazy");
 }
 
-// ===== BADGE / STATS =====
-// ===== WYCZYŚĆ FORMULARZ =====
-function wyczyscFormularz() {
-  document.getElementById("inputText").value = "";
-  document.getElementById("multiplier").value = 1;
-  document.getElementById("wyniki-wrap").style.display = "none";
-  appState.aktualneWyniki = null;
-  aktualizujHint();
-}
-
-function aktualizujBadge() {
+export function aktualizujBadge(appState) {
   const bc = Object.keys(appState.baza).length;
   document.getElementById("badgeNorm").textContent =
     appState.biezacaSesja.length;
@@ -986,3 +555,15 @@ function aktualizujBadge() {
     appState.biezacaSesja.length;
   document.getElementById("statBaza").textContent = bc;
 }
+
+function aktualizujHint() {
+  const v = parseInt(document.getElementById("multiplier").value) || 1;
+  const hint = document.getElementById("mult-hint");
+  hint.textContent =
+    v === 1
+      ? "Jedna norma (brak mnożenia ilości)"
+      : `${v} identycznych norm — ilości ×${v}`;
+  hint.style.color = v > 1 ? "var(--accent)" : "var(--text3)";
+}
+
+export { aktualizujHint };

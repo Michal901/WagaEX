@@ -15,3 +15,18 @@ export function toast(msg, err = false) {
     t.className = "toast";
   }, 3200);
 }
+
+export function agregujProdukty(normy) {
+  const mapa = {};
+  for (const norma of normy) {
+    for (const p of norma.produkty) {
+      const key = p.nazwa.toLowerCase().trim();
+      if (!mapa[key])
+        mapa[key] = { nazwa: p.nazwa, waga: p.waga, iloscTotal: 0 };
+      mapa[key].iloscTotal += p.iloscX;
+    }
+  }
+  return Object.values(mapa).sort(
+    (a, b) => b.waga * b.iloscTotal - a.waga * a.iloscTotal,
+  );
+}

@@ -1,5 +1,5 @@
 // ===== UI MODULE =====
-import { esc, toast } from "./utils.js";
+import { agregujProdukty, esc, toast } from "./utils.js";
 
 export function renderSesjaChips(appState) {
   const pasek = document.getElementById("sesja-pasek");
@@ -14,20 +14,44 @@ export function renderSesjaChips(appState) {
 
   const lista = document.getElementById("sesja-normy-lista");
   lista.innerHTML = appState.biezacaSesja
-    .map(
-      (n) => `
+    .map((n) => {
+      const rows = n.produkty
+        .map(
+          (p, i) => `
+      <tr>
+        <td class="mono" style="color:var(--text3);font-size:11px">${i + 1}</td>
+        <td>${esc(p.nazwa)}</td>
+        <td class="center mono">${p.ilosc}</td>
+        <td class="center mono">${p.waga} kg</td>
+        <td class="right mono"><strong>${(p.waga * p.ilosc).toFixed(2)} kg</strong></td>
+      </tr>`,
+        )
+        .join("");
+      return `
     <div class="norma-chip">
-      <div class="norma-chip-left">
-        <span class="norma-chip-nr">${n.label}</span>
-        <span class="norma-chip-info">${n.produkty.length} produktów</span>
+      <div class="norma-chip-header" onclick="toggleNorma('${n.id}')">
+        <div class="norma-chip-left">
+          <span class="norma-chip-nr">${n.label}</span>
+          <span class="norma-chip-info">${n.produkty.length} produktów</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span class="norma-chip-kg ${n.totalKg > 50 ? "warn" : ""}">${n.totalKg.toFixed(2)} kg${n.totalKg > 50 ? " ⚠️" : ""}</span>
+          <span class="norma-toggle" id="tog-norma-${n.id}">›</span>
+        </div>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <span class="norma-chip-kg ${n.totalKg > 50 ? "warn" : ""}">${n.totalKg.toFixed(2)} kg${n.totalKg > 50 ? " ⚠️" : ""}</span>
-        <button class="btn-ghost-sm" onclick="drukujNormeZSesji(${n.id})">🖨</button>
-        <button class="btn-ghost-sm" onclick="usunNorme(${n.id})">✕</button>
+      <div class="norma-body" id="body-norma-${n.id}">
+        <table class="results-table" style="margin-top:12px">
+          <thead><tr><th>#</th><th>Nazwa</th><th class="center">Ilość</th><th class="center">Waga jedn.</th><th class="right">Waga łączna</th></tr></thead>
+          <tbody>${rows}</tbody>
+          <tfoot><tr><td colspan="4" class="right">Łączna waga:</td><td class="right">${n.totalKg.toFixed(2)} kg</td></tr></tfoot>
+        </table>
+        <div class="norma-actions">
+          <button class="btn-secondary" onclick="drukujNormeZSesji('${n.id}')">🖨 Drukuj normę</button>
+          <button class="btn-danger" onclick="usunNorme('${n.id}')">🗑 Usuń</button>
+        </div>
       </div>
-    </div>`,
-    )
+    </div>`;
+    })
     .join("");
 
   const totalAll = appState.biezacaSesja.reduce((s, n) => s + n.totalKg, 0);
@@ -45,6 +69,18 @@ export function usunNorme(appState, id) {
   });
   aktualizujBadge(appState);
   renderSesjaChips(appState);
+}
+
+export function toggleNorma(id) {
+  const body = document.getElementById(`body-norma-${id}`);
+  const tog = document.getElementById(`tog-norma-${id}`);
+  if (body.classList.contains("open")) {
+    body.classList.remove("open");
+    tog.classList.remove("open");
+  } else {
+    body.classList.add("open");
+    tog.classList.add("open");
+  }
 }
 
 export function resetSesji(appState) {
@@ -68,20 +104,7 @@ export function renderZbiorcza(appState) {
     return;
   }
 
-  // Zsumuj produkty po nazwie (case-insensitive)
-  const mapa = {};
-  for (const norma of appState.biezacaSesja) {
-    for (const p of norma.produkty) {
-      const key = p.nazwa.toLowerCase().trim();
-      if (!mapa[key])
-        mapa[key] = { nazwa: p.nazwa, waga: p.waga, iloscTotal: 0 };
-      mapa[key].iloscTotal += p.iloscX;
-    }
-  }
-
-  const lista = Object.values(mapa).sort(
-    (a, b) => b.waga * b.iloscTotal - a.waga * a.iloscTotal,
-  );
+  const lista = agregujProdukty(appState.biezacaSesja);
   const totalKg = lista.reduce((s, p) => s + p.waga * p.iloscTotal, 0);
 
   let rows = lista
@@ -90,7 +113,7 @@ export function renderZbiorcza(appState) {
     <tr>
       <td class="mono" style="color:var(--text3);font-size:11px">${i + 1}</td>
       <td>${esc(p.nazwa)}</td>
-      <td class="center mono"><strong>${p.iloscTotal}</strong></td>
+      <td class="center mono"><strong>${Number.isInteger(p.iloscTotal) ? p.iloscTotal : p.iloscTotal.toFixed(2)}</strong></td>
       <td class="center mono">${p.waga} kg</td>
       <td class="right mono"><strong>${(p.waga * p.iloscTotal).toFixed(2)} kg</strong></td>
     </tr>`,
@@ -234,18 +257,7 @@ export function drukujZbiorcza(appState) {
     return;
   }
 
-  const mapa = {};
-  for (const norma of appState.biezacaSesja) {
-    for (const p of norma.produkty) {
-      const key = p.nazwa.toLowerCase().trim();
-      if (!mapa[key])
-        mapa[key] = { nazwa: p.nazwa, waga: p.waga, iloscTotal: 0 };
-      mapa[key].iloscTotal += p.iloscX;
-    }
-  }
-  const lista = Object.values(mapa).sort(
-    (a, b) => b.waga * b.iloscTotal - a.waga * a.iloscTotal,
-  );
+  const lista = agregujProdukty(appState.biezacaSesja);
   const totalKg = lista.reduce((s, p) => s + p.waga * p.iloscTotal, 0);
   const d = new Date().toLocaleString("pl-PL");
 
@@ -256,17 +268,21 @@ export function drukujZbiorcza(appState) {
   const S = {
     wrap: "font-family:Arial,sans-serif;font-size:12px;color:#000;padding:10px;",
     title: "font-size:14px;font-weight:bold;margin-bottom:10px;",
-    table: "width:100%;border-collapse:collapse;font-size:12px;margin-top:10px;",
-    thCheck: "border:1px solid #999;padding:6px 8px;text-align:center;width:24px;font-weight:bold;background:#f0f0f0;",
+    table:
+      "width:100%;border-collapse:collapse;font-size:12px;margin-top:10px;",
+    thCheck:
+      "border:1px solid #999;padding:6px 8px;text-align:center;width:24px;font-weight:bold;background:#f0f0f0;",
     th: "border:1px solid #999;padding:6px 8px;text-align:left;font-weight:bold;background:#f0f0f0;",
     thC: "border:1px solid #999;padding:6px 8px;text-align:center;font-weight:bold;background:#f0f0f0;",
     thR: "border:1px solid #999;padding:6px 8px;text-align:right;font-weight:bold;background:#f0f0f0;",
-    tdCheck: "border:1px solid #999;padding:6px 8px;text-align:center;width:24px;",
+    tdCheck:
+      "border:1px solid #999;padding:6px 8px;text-align:center;width:24px;",
     td: "border:1px solid #999;padding:6px 8px;text-align:left;",
     tdC: "border:1px solid #999;padding:6px 8px;text-align:center;",
     tdR: "border:1px solid #999;padding:6px 8px;text-align:right;font-weight:bold;",
     tfTd: "border-top:2px solid #333;padding:6px 8px;text-align:right;font-weight:bold;border-left:none;border-right:none;border-bottom:none;",
-    tfTdR: "border-top:2px solid #333;padding:6px 8px;text-align:right;font-weight:bold;",
+    tfTdR:
+      "border-top:2px solid #333;padding:6px 8px;text-align:right;font-weight:bold;",
   };
 
   const rows = lista
@@ -310,7 +326,7 @@ export function drukujZbiorcza(appState) {
   window.print();
 }
 
-export function zapiszSesje(appState, storage) {
+export function zapiszSesje(appState) {
   if (!appState.biezacaSesja.length) {
     toast("Brak norm do zapisania", true);
     return;
@@ -321,10 +337,13 @@ export function zapiszSesje(appState, storage) {
   );
 
   const sesja = {
-    id: Date.now(),
+    id: crypto.randomUUID(),
     nr: appState.historia.length + 1,
     data: new Date().toISOString(),
-    normy: appState.biezacaSesja.map((n) => ({ ...n })),
+    normy: appState.biezacaSesja.map((n) => ({
+      ...n,
+      produkty: n.produkty.map((p) => ({ ...p })),
+    })),
     totalKg,
   };
 
@@ -337,7 +356,7 @@ export function zapiszSesje(appState, storage) {
     ),
     sesja.data,
   );
-  storage.save("stat", storage.load("stat", 0) + 1);
+  appState.storage.save("stat", appState.storage.load("stat", 0) + 1);
 
   // Reset sesji po zapisaniu
   appState.biezacaSesja = [];
@@ -370,27 +389,14 @@ export function renderHistorie(appState) {
       const normaCount = s.normy ? s.normy.length : "?";
 
       // Zbiorówka per sesja
-      const mapa = {};
-      if (s.normy) {
-        for (const n of s.normy) {
-          for (const p of n.produkty) {
-            const key = p.nazwa.toLowerCase().trim();
-            if (!mapa[key])
-              mapa[key] = { nazwa: p.nazwa, waga: p.waga, iloscTotal: 0 };
-            mapa[key].iloscTotal += p.iloscX;
-          }
-        }
-      }
-      const lista = Object.values(mapa).sort(
-        (a, b) => b.waga * b.iloscTotal - a.waga * a.iloscTotal,
-      );
+      const lista = s.normy ? agregujProdukty(s.normy) : [];
       const rows = lista
         .map(
           (p, i) => `
       <tr>
         <td class="mono" style="color:var(--text3);font-size:11px">${i + 1}</td>
         <td>${esc(p.nazwa)}</td>
-        <td class="center mono">${p.iloscTotal}</td>
+        <td class="center mono">${Number.isInteger(p.iloscTotal) ? p.iloscTotal : p.iloscTotal.toFixed(2)}</td>
         <td class="center mono">${p.waga} kg</td>
         <td class="right mono">${(p.waga * p.iloscTotal).toFixed(2)} kg</td>
       </tr>`,
@@ -451,18 +457,7 @@ export function drukujHistoriaSesje(appState, id) {
   const s = appState.historia.find((x) => x.id === id);
   if (!s || !s.normy) return;
 
-  const mapa = {};
-  for (const n of s.normy) {
-    for (const p of n.produkty) {
-      const key = p.nazwa.toLowerCase().trim();
-      if (!mapa[key])
-        mapa[key] = { nazwa: p.nazwa, waga: p.waga, iloscTotal: 0 };
-      mapa[key].iloscTotal += p.iloscX;
-    }
-  }
-  const lista = Object.values(mapa).sort(
-    (a, b) => b.waga * b.iloscTotal - a.waga * a.iloscTotal,
-  );
+  const lista = agregujProdukty(s.normy);
   const totalKg = lista.reduce((ss, p) => ss + p.waga * p.iloscTotal, 0);
   const d = new Date(s.data).toLocaleString("pl-PL");
   const normaInfo = s.normy
@@ -515,13 +510,12 @@ export function renderBaze(appState) {
         year: "numeric",
       });
       const key = p.nazwa.toLowerCase().trim();
-      const safeKey = key.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
       return `<tr>
       <td class="mono" style="color:var(--text3);font-size:11px">${i + 1}</td>
       <td>${esc(p.nazwa)}</td>
       <td class="center mono">${p.waga} kg</td>
       <td class="center" style="color:var(--text3);font-size:12px">${d}</td>
-      <td class="center"><button class="btn-ghost-sm" onclick="usunZBazy('${safeKey}')">🗑</button></td>
+      <td class="center"><button class="btn-ghost-sm btn-usun-baza" data-key="${esc(key)}">🗑</button></td>
     </tr>`;
     })
     .join("");
@@ -534,6 +528,14 @@ export function renderBaze(appState) {
       <tbody>${rows}</tbody>
     </table>
     <div style="margin-top:10px;color:var(--text3);font-size:12px;text-align:right">${entries.length} produktów w bazie</div>`;
+
+  // Event delegation dla usuwania produktów
+  el.addEventListener("click", (e) => {
+    const btn = e.target.closest(".btn-usun-baza");
+    if (btn) {
+      usunZBazy(appState, btn.dataset.key);
+    }
+  });
 }
 
 export function usunZBazy(appState, key) {
@@ -555,15 +557,3 @@ export function aktualizujBadge(appState) {
     appState.biezacaSesja.length;
   document.getElementById("statBaza").textContent = bc;
 }
-
-function aktualizujHint() {
-  const v = parseInt(document.getElementById("multiplier").value) || 1;
-  const hint = document.getElementById("mult-hint");
-  hint.textContent =
-    v === 1
-      ? "Jedna norma (brak mnożenia ilości)"
-      : `${v} identycznych norm — ilości ×${v}`;
-  hint.style.color = v > 1 ? "var(--accent)" : "var(--text3)";
-}
-
-export { aktualizujHint };

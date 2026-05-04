@@ -23,6 +23,7 @@ import {
   renderHistorie,
   renderZbiorcza,
   resetSesji,
+  toggleNorma,
   toggleSesja,
   usunNorme,
   usunSesje,
@@ -38,6 +39,7 @@ const appState = new AppState(storage);
 // Funkcje globalne dla onclick w HTML
 window.drukujNormeZSesji = (id) => drukujNormeZSesji(appState, id);
 window.usunNorme = (id) => usunNorme(appState, id);
+window.toggleNorma = toggleNorma;
 window.toggleSesja = toggleSesja;
 window.usunSesje = (id) => usunSesje(appState, id);
 window.drukujHistoriaSesje = (id) => drukujHistoriaSesje(appState, id);
@@ -73,6 +75,11 @@ document.addEventListener("DOMContentLoaded", () => {
   document
     .getElementById("multiplier")
     .addEventListener("input", aktualizujHint);
+  document.getElementById("multiplier").addEventListener("blur", () => {
+    const el = document.getElementById("multiplier");
+    el.value = Math.max(1, Math.min(8, parseInt(el.value) || 1));
+    aktualizujHint();
+  });
   aktualizujHint();
 
   // Kalkulator
@@ -109,7 +116,7 @@ document.addEventListener("DOMContentLoaded", () => {
     .addEventListener("click", () => drukujZbiorcza(appState));
   document
     .getElementById("btnZapiszSesje")
-    .addEventListener("click", () => zapiszSesje(appState, storage));
+    .addEventListener("click", () => zapiszSesje(appState));
 
   // Historia
   document

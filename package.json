@@ -1,0 +1,10 @@
+{
+  "name": "wagaex",
+  "version": "1.0.0",
+  "description": "Aplikacja do kalkulacji wag i norm",
+  "type": "module",
+  "main": "main.js",
+  "scripts": {
+    "check": "node --check main.js"
+  }
+}

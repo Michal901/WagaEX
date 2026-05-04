@@ -172,7 +172,7 @@ export function dodajDoSesji(appState) {
   for (let i = 0; i < mult; i++) {
     const nr = appState.biezacaSesja.length + 1;
     appState.biezacaSesja.push({
-      id: Date.now() + i,
+      id: crypto.randomUUID(),
       nr,
       label: `Norma ${nr}`,
       multiplier: 1,

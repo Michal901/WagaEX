@@ -1,3 +1,7 @@
+// =====================================================
+//  WagaEX – main.js (POPRAWIONY FLOW SUPABASE)
+// =====================================================
+
 import {
   aktualizujHint,
   dodajDoSesji,
@@ -23,67 +27,46 @@ import {
   toggleSesja,
   usunNorme,
   usunSesje,
+  usunZBazy,
   wyczyscHistorie,
   zapiszSesje,
 } from "./ui.js";
 
-// =========================
+// ==========================
+// INIT INSTANCES
+// ==========================
 const storage = new StorageManager();
 const appState = new AppState(storage);
 
-// =========================
-// SYNC (🔥 KLUCZ)
-async function syncBaza() {
-  appState.baza = await storage.load("baza", {});
-  renderBaze(appState);
-  aktualizujBadge(appState);
-}
-
-// =========================
-// GLOBAL DELETE FIX
-window.usunZBazy = async (id) => {
-  await storage.deleteProdukt(id);
-  await syncBaza();
-};
-
-// =========================
+// ==========================
+// GLOBAL FUNCTIONS (HTML)
+// ==========================
 window.drukujNormeZSesji = (id) => drukujNormeZSesji(appState, id);
 window.usunNorme = (id) => usunNorme(appState, id);
 window.toggleNorma = toggleNorma;
 window.toggleSesja = toggleSesja;
 window.usunSesje = (id) => usunSesje(appState, id);
 window.drukujHistoriaSesje = (id) => drukujHistoriaSesje(appState, id);
+window.usunZBazy = (key) => usunZBazy(appState, key);
 
-// =========================
-document.addEventListener("click", async (e) => {
-  const btn = e.target.closest(".btn-usun-baza");
-  if (!btn) return;
-
-  const id = btn.dataset.id;
-
-  // 1. usuń z Supabase
-  await appState.storage.deleteFromBaza(id);
-
-  // 2. usuń lokalnie
-  delete appState.baza[id];
-
-  // 3. zapis lokalny statyczny
-  appState.saveToStorage();
-
-  // 4. UI refresh
-  renderBaze(appState);
-  aktualizujBadge(appState);
-
-  toast("Produkt usunięty");
-});
+// ==========================
+// INIT APP (🔥 FIX HERE)
+// ==========================
 async function init() {
-  await syncBaza();
+  // 🔥 KLUCZ: czekamy na Supabase
+  const baza = await storage.load("baza", {});
 
+  appState.baza = baza;
+
+  // ==========================
+  // NAVIGATION
+  // ==========================
   document.querySelectorAll(".nav-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       document
         .querySelectorAll(".nav-btn")
         .forEach((b) => b.classList.remove("active"));
+
       document
         .querySelectorAll(".tab-content")
         .forEach((t) => t.classList.remove("active"));
@@ -99,12 +82,17 @@ async function init() {
     });
   });
 
+  // ==========================
+  // MULTIPLIER
+  // ==========================
   document
     .getElementById("btnMinus")
     .addEventListener("click", () => zmienMnoznik(-1));
+
   document
     .getElementById("btnPlus")
     .addEventListener("click", () => zmienMnoznik(1));
+
   document
     .getElementById("multiplier")
     .addEventListener("input", aktualizujHint);
@@ -117,6 +105,9 @@ async function init() {
 
   aktualizujHint();
 
+  // ==========================
+  // CALCULATOR
+  // ==========================
   document
     .getElementById("btnOblicz")
     .addEventListener("click", () => obliczWage(appState));
@@ -127,22 +118,64 @@ async function init() {
 
   document
     .getElementById("btnDodajDoSesji")
-    .addEventListener("click", async () => {
-      await dodajDoSesji(appState);
-      await syncBaza();
-    });
+    .addEventListener("click", () => dodajDoSesji(appState));
+
+  document
+    .getElementById("btnDrukujNorme")
+    .addEventListener("click", () => drukujNorme(appState));
 
   document
     .getElementById("btnResetSesji")
     .addEventListener("click", () => resetSesji(appState));
 
+  document.getElementById("btnIdZbiorówka").addEventListener("click", () => {
+    document
+      .querySelectorAll(".nav-btn")
+      .forEach((b) => b.classList.remove("active"));
+
+    document
+      .querySelectorAll(".tab-content")
+      .forEach((t) => t.classList.remove("active"));
+
+    document.querySelector('[data-tab="zbiorcza"]').classList.add("active");
+    document.getElementById("tab-zbiorcza").classList.add("active");
+
+    renderZbiorcza(appState);
+  });
+
+  // ==========================
+  // ZBIORÓWKA
+  // ==========================
+  document
+    .getElementById("btnDrukujZbiorcza")
+    .addEventListener("click", () => drukujZbiorcza(appState));
+
+  document
+    .getElementById("btnZapiszSesje")
+    .addEventListener("click", () => zapiszSesje(appState));
+
+  // ==========================
+  // HISTORIA
+  // ==========================
   document
     .getElementById("btnWyczyscHistorie")
     .addEventListener("click", () => wyczyscHistorie(appState));
 
+  // ==========================
+  // BAZA SEARCH
+  // ==========================
   document
     .getElementById("bazaSzukaj")
     .addEventListener("input", () => renderBaze(appState));
+
+  // ==========================
+  // FIRST RENDER (🔥 IMPORTANT)
+  // ==========================
+  renderBaze(appState);
+  aktualizujBadge(appState);
 }
 
+// ==========================
+// START APP
+// ==========================
 document.addEventListener("DOMContentLoaded", init);

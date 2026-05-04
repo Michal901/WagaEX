@@ -1,10 +1,31 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js";
 
+// =========================
+// SUPABASE
+// =========================
 const SUPABASE_URL = "https://nxlkqlylimffykelxrgl.supabase.co";
 const SUPABASE_KEY = "sb_publishable_AwkQiTf-N7S2m-UeQrM7RQ_5J961ZQb";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// =========================
+// HELPERS (🔥 STABILNOŚĆ DANYCH)
+// =========================
+const normId = (id) => String(id).toLowerCase().trim().replace(/\s+/g, " ");
+
+const toNumber = (v) => Number(v) || 0;
+
+const toISO = (v) => {
+  try {
+    return new Date(v || Date.now()).toISOString();
+  } catch {
+    return new Date().toISOString();
+  }
+};
+
+// =========================
+// STORAGE MANAGER
+// =========================
 export class StorageManager {
   constructor() {
     this.keys = {
@@ -14,7 +35,7 @@ export class StorageManager {
   }
 
   // =========================
-  // LOCAL STORAGE (historia/stat)
+  // SAVE WRAPPER
   // =========================
   async save(key, value) {
     if (key === "baza") {
@@ -24,21 +45,42 @@ export class StorageManager {
     localStorage.setItem(this.keys[key], JSON.stringify(value));
   }
 
+  // =========================
+  // LOAD WRAPPER
+  // =========================
   async load(key, defaultValue = null) {
     if (key === "baza") {
       return await this.loadBaza(defaultValue);
     }
 
     try {
-      const value = localStorage.getItem(this.keys[key]);
-      return value ? JSON.parse(value) : defaultValue;
+      const v = localStorage.getItem(this.keys[key]);
+      return v ? JSON.parse(v) : defaultValue;
     } catch {
       return defaultValue;
     }
   }
 
   // =========================
-  // SUPABASE LOAD
+  // UPSERT (SAVE)
+  // =========================
+  async saveBaza(baza) {
+    const rows = Object.entries(baza).map(([id, p]) => ({
+      id: normId(id),
+      nazwa: p.nazwa,
+      waga: toNumber(p.waga),
+      ostatnio_uzyta: toISO(p.ostatnioUzyta),
+    }));
+
+    const { error } = await supabase.from("products").upsert(rows);
+
+    if (error) {
+      console.error("❌ SAVE ERROR:", error.message);
+    }
+  }
+
+  // =========================
+  // SELECT (LOAD)
   // =========================
   async loadBaza(defaultValue = {}) {
     const { data, error } = await supabase
@@ -47,51 +89,41 @@ export class StorageManager {
       .order("ostatnio_uzyta", { ascending: false });
 
     if (error) {
-      console.error("Supabase LOAD error:", error);
+      console.error("❌ LOAD ERROR:", error.message);
       return defaultValue;
     }
 
+    if (!data?.length) return defaultValue;
+
     const result = {};
 
-    (data || []).forEach((p) => {
-      result[p.id] = {
+    for (const p of data) {
+      result[normId(p.id)] = {
         nazwa: p.nazwa,
-        waga: Number(p.waga),
-        ostatnioUzyta: p.ostatnio_uzyta,
+        waga: toNumber(p.waga),
+        ostatnioUzyta: toISO(p.ostatnio_uzyta),
       };
-    });
+    }
 
     return result;
   }
 
   // =========================
-  // SUPABASE UPSERT (SAVE)
+  // DELETE (🔥 100% FIXED)
   // =========================
-  async saveBaza(baza) {
-    const rows = Object.entries(baza).map(([id, p]) => ({
-      id,
-      nazwa: p.nazwa,
-      waga: Number(p.waga),
-      ostatnio_uzyta: p.ostatnioUzyta,
-    }));
+  async deleteFromBaza(id) {
+    const cleanId = normId(id);
 
     const { error } = await supabase
       .from("products")
-      .upsert(rows, { onConflict: "id" });
+      .delete()
+      .eq("id", cleanId);
 
     if (error) {
-      console.error("Supabase SAVE error:", error);
+      console.error("❌ DELETE ERROR:", error.message);
     }
-  }
 
-  // =========================
-  // 🔥 DELETE (MISSING BEFORE)
-  // =========================
-  async deleteFromBaza(id) {
-    const { error } = await supabase.from("products").delete().eq("id", id);
-
-    if (error) {
-      console.error("Supabase DELETE error:", error);
-    }
+    // 🔥 zawsze zwracamy świeżą bazę
+    return await this.loadBaza({});
   }
 }

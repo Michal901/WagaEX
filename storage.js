@@ -1,6 +1,5 @@
 // ===== STORAGE MODULE =====
-const API_BASE = "http://localhost:3001";
-
+const API_BASE = "https://wagaex-backend.onrender.com";
 export class StorageManager {
   constructor() {
     this.keys = {

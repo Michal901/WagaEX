@@ -3,6 +3,7 @@
 Aby uruchomić aplikację z backendem dla bazy produktów:
 
 1. Uruchom backend:
+
    ```bash
    cd backend
    npm start

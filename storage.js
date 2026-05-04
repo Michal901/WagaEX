@@ -1,5 +1,5 @@
 // ===== STORAGE MODULE =====
-const API_BASE = 'http://localhost:3001';
+const API_BASE = "http://localhost:3001";
 
 export class StorageManager {
   constructor() {
@@ -11,7 +11,7 @@ export class StorageManager {
   }
 
   async save(key, value) {
-    if (key === 'baza') {
+    if (key === "baza") {
       await this.saveBazaToAPI(value);
     } else {
       localStorage.setItem(this.keys[key], JSON.stringify(value));
@@ -19,7 +19,7 @@ export class StorageManager {
   }
 
   async load(key, defaultValue = null) {
-    if (key === 'baza') {
+    if (key === "baza") {
       return await this.loadBazaFromAPI(defaultValue);
     } else {
       try {
@@ -36,19 +36,19 @@ export class StorageManager {
       // Save each product individually
       const promises = Object.entries(baza).map(([id, product]) =>
         fetch(`${API_BASE}/products`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             id,
             nazwa: product.nazwa,
             waga: product.waga,
-            ostatnioUzyta: product.ostatnioUzyta
-          })
-        })
+            ostatnioUzyta: product.ostatnioUzyta,
+          }),
+        }),
       );
       await Promise.all(promises);
     } catch (error) {
-      console.error('Failed to save baza to API:', error);
+      console.error("Failed to save baza to API:", error);
       // Fallback to localStorage
       localStorage.setItem(this.keys.baza, JSON.stringify(baza));
     }
@@ -63,7 +63,7 @@ export class StorageManager {
         throw new Error(`API returned ${response.status}`);
       }
     } catch (error) {
-      console.error('Failed to load baza from API:', error);
+      console.error("Failed to load baza from API:", error);
       // Fallback to localStorage
       try {
         const value = localStorage.getItem(this.keys.baza);

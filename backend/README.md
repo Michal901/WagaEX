@@ -5,16 +5,19 @@ Prosty backend API dla bazy produktów aplikacji WagaEX.
 ## Uruchomienie
 
 1. Zainstaluj zależności:
+
    ```bash
    npm install
    ```
 
 2. Uruchom serwer:
+
    ```bash
    npm start
    ```
 
    Lub w trybie deweloperskim (auto-reload):
+
    ```bash
    npm run dev
    ```

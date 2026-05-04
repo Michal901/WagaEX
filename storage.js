@@ -1,5 +1,10 @@
-// ===== STORAGE MODULE =====
-const API_BASE = "https://wagaex-backend.onrender.com";
+import { createClient } from "@supabase/supabase-js";
+
+const SUPABASE_URL = "https://nxlkqlylimffykelxrgl.supabase.co";
+const SUPABASE_KEY = "sb_publishable_AwkQiTf-N7S2m-UeQrM7RQ_5J961ZQb";
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
 export class StorageManager {
   constructor() {
     this.keys = {
@@ -11,7 +16,7 @@ export class StorageManager {
 
   async save(key, value) {
     if (key === "baza") {
-      await this.saveBazaToAPI(value);
+      await this.saveBaza(value);
     } else {
       localStorage.setItem(this.keys[key], JSON.stringify(value));
     }
@@ -19,57 +24,49 @@ export class StorageManager {
 
   async load(key, defaultValue = null) {
     if (key === "baza") {
-      return await this.loadBazaFromAPI(defaultValue);
-    } else {
-      try {
-        const value = localStorage.getItem(this.keys[key]);
-        return value ? JSON.parse(value) : defaultValue;
-      } catch {
-        return defaultValue;
-      }
+      return await this.loadBaza(defaultValue);
+    }
+
+    try {
+      const value = localStorage.getItem(this.keys[key]);
+      return value ? JSON.parse(value) : defaultValue;
+    } catch {
+      return defaultValue;
     }
   }
 
-  async saveBazaToAPI(baza) {
-    try {
-      // Save each product individually
-      const promises = Object.entries(baza).map(([id, product]) =>
-        fetch(`${API_BASE}/products`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id,
-            nazwa: product.nazwa,
-            waga: product.waga,
-            ostatnioUzyta: product.ostatnioUzyta,
-          }),
-        }),
-      );
-      await Promise.all(promises);
-    } catch (error) {
-      console.error("Failed to save baza to API:", error);
-      // Fallback to localStorage
-      localStorage.setItem(this.keys.baza, JSON.stringify(baza));
-    }
+  // ===== SUPABASE SAVE =====
+  async saveBaza(baza) {
+    const rows = Object.entries(baza).map(([id, p]) => ({
+      id,
+      nazwa: p.nazwa,
+      waga: p.waga,
+      ostatnio_uzyta: p.ostatnioUzyta,
+    }));
+
+    const { error } = await supabase.from("products").upsert(rows);
+
+    if (error) console.error("Supabase save error:", error);
   }
 
-  async loadBazaFromAPI(defaultValue = {}) {
-    try {
-      const response = await fetch(`${API_BASE}/products`);
-      if (response.ok) {
-        return await response.json();
-      } else {
-        throw new Error(`API returned ${response.status}`);
-      }
-    } catch (error) {
-      console.error("Failed to load baza from API:", error);
-      // Fallback to localStorage
-      try {
-        const value = localStorage.getItem(this.keys.baza);
-        return value ? JSON.parse(value) : defaultValue;
-      } catch {
-        return defaultValue;
-      }
+  // ===== SUPABASE LOAD =====
+  async loadBaza(defaultValue = {}) {
+    const { data, error } = await supabase.from("products").select("*");
+
+    if (error) {
+      console.error("Supabase load error:", error);
+      return defaultValue;
     }
+
+    const result = {};
+    data.forEach((p) => {
+      result[p.id] = {
+        nazwa: p.nazwa,
+        waga: p.waga,
+        ostatnioUzyta: p.ostatnio_uzyta,
+      };
+    });
+
+    return result;
   }
 }

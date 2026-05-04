@@ -1,10 +1,9 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "https://esm.sh/@supabase/supabase-js";
 
 const SUPABASE_URL = "https://nxlkqlylimffykelxrgl.supabase.co";
 const SUPABASE_KEY = "sb_publishable_AwkQiTf-N7S2m-UeQrM7RQ_5J961ZQb";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-
 export class StorageManager {
   constructor() {
     this.keys = {

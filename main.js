@@ -23,31 +23,16 @@ import {
   toggleSesja,
   usunNorme,
   usunSesje,
-  usunZBazy,
   wyczyscHistorie,
   zapiszSesje,
 } from "./ui.js";
 
 // =========================
-// INIT
-// =========================
 const storage = new StorageManager();
 const appState = new AppState(storage);
 
 // =========================
-// GLOBAL UI FUNCTIONS
-// =========================
-window.drukujNormeZSesji = (id) => drukujNormeZSesji(appState, id);
-window.usunNorme = (id) => usunNorme(appState, id);
-window.toggleNorma = toggleNorma;
-window.toggleSesja = toggleSesja;
-window.usunSesje = (id) => usunSesje(appState, id);
-window.drukujHistoriaSesje = (id) => drukujHistoriaSesje(appState, id);
-window.usunZBazy = (key) => usunZBazy(appState, key);
-
-// =========================
-// SYNC FUNCTION (🔥 KLUCZ FIX)
-// =========================
+// SYNC (🔥 KLUCZ)
 async function syncBaza() {
   appState.baza = await storage.load("baza", {});
   renderBaze(appState);
@@ -55,12 +40,24 @@ async function syncBaza() {
 }
 
 // =========================
-// INIT APP
+// GLOBAL DELETE FIX
+window.usunZBazy = async (id) => {
+  await storage.deleteProdukt(id);
+  await syncBaza();
+};
+
+// =========================
+window.drukujNormeZSesji = (id) => drukujNormeZSesji(appState, id);
+window.usunNorme = (id) => usunNorme(appState, id);
+window.toggleNorma = toggleNorma;
+window.toggleSesja = toggleSesja;
+window.usunSesje = (id) => usunSesje(appState, id);
+window.drukujHistoriaSesje = (id) => drukujHistoriaSesje(appState, id);
+
 // =========================
 async function init() {
   await syncBaza();
 
-  // NAV
   document.querySelectorAll(".nav-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       document
@@ -81,7 +78,6 @@ async function init() {
     });
   });
 
-  // MULTIPLIER
   document
     .getElementById("btnMinus")
     .addEventListener("click", () => zmienMnoznik(-1));
@@ -100,7 +96,6 @@ async function init() {
 
   aktualizujHint();
 
-  // CALCULATOR
   document
     .getElementById("btnOblicz")
     .addEventListener("click", () => obliczWage(appState));
@@ -113,52 +108,20 @@ async function init() {
     .getElementById("btnDodajDoSesji")
     .addEventListener("click", async () => {
       await dodajDoSesji(appState);
-      await syncBaza(); // 🔥 FIX: odśwież po zmianie
+      await syncBaza();
     });
-
-  document
-    .getElementById("btnDrukujNorme")
-    .addEventListener("click", () => drukujNorme(appState));
 
   document
     .getElementById("btnResetSesji")
     .addEventListener("click", () => resetSesji(appState));
 
-  document.getElementById("btnIdZbiorówka").addEventListener("click", () => {
-    document
-      .querySelectorAll(".nav-btn")
-      .forEach((b) => b.classList.remove("active"));
-    document
-      .querySelectorAll(".tab-content")
-      .forEach((t) => t.classList.remove("active"));
-
-    document.querySelector('[data-tab="zbiorcza"]').classList.add("active");
-    document.getElementById("tab-zbiorcza").classList.add("active");
-
-    renderZbiorcza(appState);
-  });
-
-  // ZBIORÓWKA
-  document
-    .getElementById("btnDrukujZbiorcza")
-    .addEventListener("click", () => drukujZbiorcza(appState));
-
-  document
-    .getElementById("btnZapiszSesje")
-    .addEventListener("click", () => zapiszSesje(appState));
-
-  // HISTORIA
   document
     .getElementById("btnWyczyscHistorie")
     .addEventListener("click", () => wyczyscHistorie(appState));
 
-  // SEARCH
   document
     .getElementById("bazaSzukaj")
     .addEventListener("input", () => renderBaze(appState));
 }
 
-// =========================
-// START
-// =========================
 document.addEventListener("DOMContentLoaded", init);

@@ -47,10 +47,7 @@ export class StorageManager {
 
     const { error } = await supabase.from("products").upsert(rows);
 
-    if (error) {
-      console.error("Supabase save error:", error);
-      return;
-    }
+    if (error) console.error("Supabase save error:", error);
   }
 
   // =========================
@@ -67,7 +64,7 @@ export class StorageManager {
       return defaultValue;
     }
 
-    if (!data || data.length === 0) return defaultValue;
+    if (!data) return defaultValue;
 
     const result = {};
 
@@ -80,5 +77,16 @@ export class StorageManager {
     });
 
     return result;
+  }
+
+  // =========================
+  // DELETE (🔥 FIX)
+  // =========================
+  async deleteProdukt(id) {
+    const { error } = await supabase.from("products").delete().eq("id", id);
+
+    if (error) {
+      console.error("Supabase delete error:", error);
+    }
   }
 }

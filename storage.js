@@ -4,11 +4,11 @@ const SUPABASE_URL = "https://nxlkqlylimffykelxrgl.supabase.co";
 const SUPABASE_KEY = "sb_publishable_AwkQiTf-N7S2m-UeQrM7RQ_5J961ZQb";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
 export class StorageManager {
   constructor() {
     this.keys = {
       historia: "wagaex_historia",
-      baza: "wagaex_baza",
       stat: "wagaex_stat",
     };
   }
@@ -34,7 +34,9 @@ export class StorageManager {
     }
   }
 
-  // ===== SUPABASE SAVE =====
+  // =========================
+  // SAVE
+  // =========================
   async saveBaza(baza) {
     const rows = Object.entries(baza).map(([id, p]) => ({
       id,
@@ -45,19 +47,30 @@ export class StorageManager {
 
     const { error } = await supabase.from("products").upsert(rows);
 
-    if (error) console.error("Supabase save error:", error);
+    if (error) {
+      console.error("Supabase save error:", error);
+      return;
+    }
   }
 
-  // ===== SUPABASE LOAD =====
+  // =========================
+  // LOAD
+  // =========================
   async loadBaza(defaultValue = {}) {
-    const { data, error } = await supabase.from("products").select("*");
+    const { data, error } = await supabase
+      .from("products")
+      .select("*")
+      .order("ostatnio_uzyta", { ascending: false });
 
     if (error) {
       console.error("Supabase load error:", error);
       return defaultValue;
     }
 
+    if (!data || data.length === 0) return defaultValue;
+
     const result = {};
+
     data.forEach((p) => {
       result[p.id] = {
         nazwa: p.nazwa,

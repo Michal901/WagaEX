@@ -1,9 +1,3 @@
-// =====================================================
-//  WagaEX – main.js (punkt wejścia aplikacji)
-//  Flow: norma → oblicz → dodaj do sesji (max 8)
-//        → zbiorówka (suma wszystkich norm) → drukuj
-// =====================================================
-
 import {
   aktualizujHint,
   dodajDoSesji,
@@ -11,8 +5,10 @@ import {
   wyczyscFormularz,
   zmienMnoznik,
 } from "./calculator.js";
+
 import { AppState } from "./state.js";
 import { StorageManager } from "./storage.js";
+
 import {
   aktualizujBadge,
   drukujHistoriaSesje,
@@ -32,11 +28,15 @@ import {
   zapiszSesje,
 } from "./ui.js";
 
-// Initialize global instances
+// =========================
+// INIT
+// =========================
 const storage = new StorageManager();
 const appState = new AppState(storage);
 
-// Funkcje globalne dla onclick w HTML
+// =========================
+// GLOBAL UI FUNCTIONS
+// =========================
 window.drukujNormeZSesji = (id) => drukujNormeZSesji(appState, id);
 window.usunNorme = (id) => usunNorme(appState, id);
 window.toggleNorma = toggleNorma;
@@ -45,9 +45,22 @@ window.usunSesje = (id) => usunSesje(appState, id);
 window.drukujHistoriaSesje = (id) => drukujHistoriaSesje(appState, id);
 window.usunZBazy = (key) => usunZBazy(appState, key);
 
-// ===== INIT =====
-document.addEventListener("DOMContentLoaded", () => {
-  // Nawigacja
+// =========================
+// SYNC FUNCTION (🔥 KLUCZ FIX)
+// =========================
+async function syncBaza() {
+  appState.baza = await storage.load("baza", {});
+  renderBaze(appState);
+  aktualizujBadge(appState);
+}
+
+// =========================
+// INIT APP
+// =========================
+async function init() {
+  await syncBaza();
+
+  // NAV
   document.querySelectorAll(".nav-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       document
@@ -56,16 +69,19 @@ document.addEventListener("DOMContentLoaded", () => {
       document
         .querySelectorAll(".tab-content")
         .forEach((t) => t.classList.remove("active"));
+
       btn.classList.add("active");
+
       const tab = btn.dataset.tab;
       document.getElementById("tab-" + tab).classList.add("active");
+
       if (tab === "zbiorcza") renderZbiorcza(appState);
       if (tab === "historia") renderHistorie(appState);
       if (tab === "baza") renderBaze(appState);
     });
   });
 
-  // Liczba norm (mnożnik)
+  // MULTIPLIER
   document
     .getElementById("btnMinus")
     .addEventListener("click", () => zmienMnoznik(-1));
@@ -75,29 +91,39 @@ document.addEventListener("DOMContentLoaded", () => {
   document
     .getElementById("multiplier")
     .addEventListener("input", aktualizujHint);
+
   document.getElementById("multiplier").addEventListener("blur", () => {
     const el = document.getElementById("multiplier");
     el.value = Math.max(1, Math.min(8, parseInt(el.value) || 1));
     aktualizujHint();
   });
+
   aktualizujHint();
 
-  // Kalkulator
+  // CALCULATOR
   document
     .getElementById("btnOblicz")
     .addEventListener("click", () => obliczWage(appState));
+
   document
     .getElementById("btnWyczysc")
     .addEventListener("click", () => wyczyscFormularz(appState));
+
   document
     .getElementById("btnDodajDoSesji")
-    .addEventListener("click", () => dodajDoSesji(appState));
+    .addEventListener("click", async () => {
+      await dodajDoSesji(appState);
+      await syncBaza(); // 🔥 FIX: odśwież po zmianie
+    });
+
   document
     .getElementById("btnDrukujNorme")
     .addEventListener("click", () => drukujNorme(appState));
+
   document
     .getElementById("btnResetSesji")
     .addEventListener("click", () => resetSesji(appState));
+
   document.getElementById("btnIdZbiorówka").addEventListener("click", () => {
     document
       .querySelectorAll(".nav-btn")
@@ -105,28 +131,34 @@ document.addEventListener("DOMContentLoaded", () => {
     document
       .querySelectorAll(".tab-content")
       .forEach((t) => t.classList.remove("active"));
+
     document.querySelector('[data-tab="zbiorcza"]').classList.add("active");
     document.getElementById("tab-zbiorcza").classList.add("active");
+
     renderZbiorcza(appState);
   });
 
-  // Zbiorówka
+  // ZBIORÓWKA
   document
     .getElementById("btnDrukujZbiorcza")
     .addEventListener("click", () => drukujZbiorcza(appState));
+
   document
     .getElementById("btnZapiszSesje")
     .addEventListener("click", () => zapiszSesje(appState));
 
-  // Historia
+  // HISTORIA
   document
     .getElementById("btnWyczyscHistorie")
     .addEventListener("click", () => wyczyscHistorie(appState));
 
-  // Baza search
+  // SEARCH
   document
     .getElementById("bazaSzukaj")
     .addEventListener("input", () => renderBaze(appState));
+}
 
-  aktualizujBadge(appState);
-});
+// =========================
+// START
+// =========================
+document.addEventListener("DOMContentLoaded", init);

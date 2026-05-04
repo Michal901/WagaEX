@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WagaEX – Kalkulator Magazynowy</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo">
+      <span class="logo-icon">⬡</span>
+      <div>
+        <div class="logo-title">WagaEX</div>
+        <div class="logo-sub">Magazyn Eksportowy</div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <button class="nav-btn active" data-tab="kalkulator">
+        <span class="nav-icon">⊞</span> Kalkulator
+      </button>
+      <button class="nav-btn" data-tab="zbiorcza">
+        <span class="nav-icon">∑</span> Zbiorówka
+        <span class="badge" id="badgeNorm">0</span>
+      </button>
+      <button class="nav-btn" data-tab="historia">
+        <span class="nav-icon">◷</span> Historia
+        <span class="badge" id="badgeHistoria">0</span>
+      </button>
+      <button class="nav-btn" data-tab="baza">
+        <span class="nav-icon">◈</span> Baza produktów
+        <span class="badge" id="badgeBaza">0</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="stat-box">
+        <div class="stat-label">Normy bieżące</div>
+        <div class="stat-val" id="statNormy">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Produkty w bazie</div>
+        <div class="stat-val" id="statBaza">0</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- ══════════ TAB: KALKULATOR ══════════ -->
+    <div class="tab-content active" id="tab-kalkulator">
+      <div class="page-header">
+        <div>
+          <h1>Nowa norma</h1>
+          <p class="page-sub">Wklej produkty z jednej normy klienta i sprawdź wagę</p>
+        </div>
+        <div class="header-controls">
+          <label class="multiplier-label">Liczba norm</label>
+          <div class="multiplier-wrap">
+            <button class="mult-btn" id="btnMinus">−</button>
+            <input type="number" id="multiplier" value="1" min="1" max="8"/>
+            <button class="mult-btn" id="btnPlus">+</button>
+          </div>
+          <div id="mult-hint" class="mult-hint"></div>
+        </div>
+      </div>
+
+      <div class="input-area">
+        <textarea id="inputText"
+          placeholder="Wklej jedną normę z Excela (kopiuj z arkusza klienta)&#10;&#10;Przykład:&#10;Zestaw ogrodowy 18233 25kg	2&#10;Odkurzacz piorący 20L Kaminer 23918 3kg	4&#10;Sztaluga malarska Maaleo 22621 2,2kg	1&#10;&#10;Jeśli klient zapisał tę samą normę np. 3 razy (sad 1–3) → ustaw Liczba norm = 3"></textarea>
+        <div class="input-actions">
+          <button class="btn-primary" id="btnOblicz">Oblicz wagę →</button>
+          <button class="btn-ghost" id="btnWyczysc">Wyczyść</button>
+        </div>
+      </div>
+
+      <!-- Wyniki bieżącej normy -->
+      <div id="wyniki-wrap" style="display:none;">
+        <div class="section-label">Wynik normy</div>
+        <div id="wyniki-tabela"></div>
+        <div class="wyniki-footer">
+          <div id="wyniki-suma" class="suma-box"></div>
+          <div class="wyniki-akcje">
+            <button class="btn-accent" id="btnDodajDoSesji">＋ Dodaj do sesji</button>
+            <button class="btn-secondary" id="btnDrukujNorme">🖨 Drukuj normę</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pasek postępu sesji -->
+      <div id="sesja-pasek" class="sesja-pasek" style="display:none;">
+        <div class="sesja-pasek-header">
+          <span class="section-label" style="margin:0">Bieżąca sesja</span>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span id="sesja-licznik" class="sesja-licznik"></span>
+            <button class="btn-danger-sm" id="btnResetSesji">✕ Reset sesji</button>
+          </div>
+        </div>
+        <div id="sesja-normy-lista"></div>
+        <div class="sesja-pasek-footer">
+          <span id="sesja-total-kg" class="sesja-total"></span>
+          <div style="display:flex;gap:8px;">
+            <button class="btn-accent" id="btnIdZbiorówka">∑ Pokaż zbiorówkę →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ TAB: ZBIORÓWKA ══════════ -->
+    <div class="tab-content" id="tab-zbiorcza">
+      <div class="page-header">
+        <div>
+          <h1>Zbiorówka</h1>
+          <p class="page-sub">Zsumowane produkty ze wszystkich norm bieżącej sesji</p>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-secondary" id="btnDrukujZbiorcza">🖨 Drukuj zbiorówkę</button>
+          <button class="btn-accent" id="btnZapiszSesje">💾 Zapisz sesję</button>
+        </div>
+      </div>
+      <div id="zbiorcza-content">
+        <div class="baza-empty"><div class="big">∑</div>Dodaj co najmniej jedną normę w zakładce Kalkulator.</div>
+      </div>
+    </div>
+
+    <!-- ══════════ TAB: HISTORIA ══════════ -->
+    <div class="tab-content" id="tab-historia">
+      <div class="page-header">
+        <div>
+          <h1>Historia sesji</h1>
+          <p class="page-sub">Zapisane zamówienia klientów</p>
+        </div>
+        <button class="btn-danger" id="btnWyczyscHistorie">🗑 Wyczyść historię</button>
+      </div>
+      <div id="historia-lista"></div>
+    </div>
+
+    <!-- ══════════ TAB: BAZA ══════════ -->
+    <div class="tab-content" id="tab-baza">
+      <div class="page-header">
+        <div>
+          <h1>Baza produktów</h1>
+          <p class="page-sub">Produkty zapamiętane automatycznie z poprzednich sesji</p>
+        </div>
+        <div class="search-wrap">
+          <input type="text" id="bazaSzukaj" placeholder="🔍 Szukaj produktu..."/>
+        </div>
+      </div>
+      <div id="baza-lista"></div>
+    </div>
+
+  </main>
+</div>
+
+<div id="toast" class="toast"></div>
+<div id="printArea" style="position:fixed;left:-9999px;top:0;"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

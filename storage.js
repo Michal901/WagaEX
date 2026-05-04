@@ -98,7 +98,9 @@ export class StorageManager {
     const result = {};
 
     for (const p of data) {
-      result[normId(p.id)] = {
+      const key = normId(p.id);
+      result[key] = {
+        id: key,
         nazwa: p.nazwa,
         waga: toNumber(p.waga),
         ostatnioUzyta: toISO(p.ostatnio_uzyta),

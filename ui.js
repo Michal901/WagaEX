@@ -326,7 +326,7 @@ export function drukujZbiorcza(appState) {
   window.print();
 }
 
-export function zapiszSesje(appState) {
+export async function zapiszSesje(appState) {
   if (!appState.biezacaSesja.length) {
     toast("Brak norm do zapisania", true);
     return;
@@ -347,16 +347,18 @@ export function zapiszSesje(appState) {
     totalKg,
   };
 
-  appState.addToHistoria(sesja);
+  await appState.addToHistoria(sesja);
 
   // Aktualizuj bazę produktów
-  appState.updateBaza(
+  await appState.updateBaza(
     appState.biezacaSesja.flatMap((n) =>
       n.produkty.map((p) => ({ ...p, ilosc: p.iloscX })),
     ),
     sesja.data,
   );
-  appState.storage.save("stat", appState.storage.load("stat", 0) + 1);
+
+  const prevStat = Number(await appState.storage.load("stat", 0)) || 0;
+  await appState.storage.save("stat", prevStat + 1);
 
   // Reset sesji po zapisaniu
   appState.biezacaSesja = [];
@@ -387,6 +389,7 @@ export function renderHistorie(appState) {
         minute: "2-digit",
       });
       const normaCount = s.normy ? s.normy.length : "?";
+      const safeId = String(s.id).replace(/'/g, "\\'");
 
       // Zbiorówka per sesja
       const lista = s.normy ? agregujProdukty(s.normy) : [];
@@ -404,7 +407,7 @@ export function renderHistorie(appState) {
         .join("");
 
       return `<div class="sesja-card">
-      <div class="sesja-header" onclick="toggleSesja(${s.id})">
+      <div class="sesja-header" onclick="toggleSesja('${safeId}')">
         <div class="sesja-meta">
           <span class="sesja-nr">Sesja #${s.nr}</span>
           <span class="sesja-data">${d}</span>
@@ -412,18 +415,18 @@ export function renderHistorie(appState) {
         </div>
         <div style="display:flex;align-items:center;gap:14px">
           <span class="sesja-kg">${s.totalKg.toFixed(2)} kg</span>
-          <span class="sesja-toggle" id="tog-${s.id}">›</span>
+          <span class="sesja-toggle" id="tog-${safeId}">›</span>
         </div>
       </div>
-      <div class="sesja-body" id="body-${s.id}">
+      <div class="sesja-body" id="body-${safeId}">
         <table class="results-table" style="margin-top:12px">
           <thead><tr><th>#</th><th>Nazwa</th><th class="center">Ilość łączna</th><th class="center">Waga jedn.</th><th class="right">Waga łączna</th></tr></thead>
           <tbody>${rows}</tbody>
           <tfoot><tr><td colspan="4" class="right">Łączna waga:</td><td class="right">${s.totalKg.toFixed(2)} kg</td></tr></tfoot>
         </table>
         <div class="sesja-actions">
-          <button class="btn-secondary" onclick="drukujHistoriaSesje(${s.id})">🖨 Drukuj zbiorówkę</button>
-          <button class="btn-danger" onclick="usunSesje(${s.id})">🗑 Usuń</button>
+          <button class="btn-secondary" onclick="drukujHistoriaSesje('${safeId}')">🖨 Drukuj zbiorówkę</button>
+          <button class="btn-danger" onclick="usunSesje('${safeId}')">🗑 Usuń</button>
         </div>
       </div>
     </div>`;
@@ -436,18 +439,18 @@ export function toggleSesja(id) {
   document.getElementById("tog-" + id).classList.toggle("open");
 }
 
-export function usunSesje(appState, id) {
+export async function usunSesje(appState, id) {
   appState.historia = appState.historia.filter((s) => s.id !== id);
-  appState.saveToStorage();
+  await appState.saveToStorage();
   aktualizujBadge(appState);
   renderHistorie(appState);
   toast("Sesja usunięta");
 }
 
-export function wyczyscHistorie(appState) {
+export async function wyczyscHistorie(appState) {
   if (!confirm("Usunąć całą historię sesji?")) return;
   appState.historia = [];
-  appState.saveToStorage();
+  await appState.saveToStorage();
   aktualizujBadge(appState);
   renderHistorie(appState);
   toast("Historia wyczyszczona");
@@ -515,6 +518,7 @@ export function renderBaze(appState) {
   const rows = entries
     .map((p, i) => {
       const d = new Date(p.ostatnioUzyta).toLocaleString("pl-PL");
+      const safeId = String(p.id || p.nazwa.toLowerCase().trim()).replace(/'/g, "\\'");
 
       return `
         <tr>
@@ -523,7 +527,7 @@ export function renderBaze(appState) {
           <td class="center">${p.waga} kg</td>
           <td class="center">${d}</td>
           <td class="center">
-            <button class="btn-ghost-sm btn-usun-baza" data-id="${p.id}">
+            <button class="btn-ghost-sm" onclick="usunZBazy('${safeId}')">
               🗑
             </button>
           </td>
@@ -548,9 +552,8 @@ export function renderBaze(appState) {
   `;
 }
 
-export function usunZBazy(appState, key) {
-  delete appState.baza[key];
-  appState.saveToStorage();
+export async function usunZBazy(appState, key) {
+  appState.baza = await appState.storage.deleteFromBaza(key);
   aktualizujBadge(appState);
   renderBaze(appState);
   toast("Produkt usunięty z bazy");

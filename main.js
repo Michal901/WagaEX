@@ -53,10 +53,8 @@ window.usunZBazy = (key) => usunZBazy(appState, key);
 // INIT APP (🔥 FIX HERE)
 // ==========================
 async function init() {
-  // 🔥 KLUCZ: czekamy na Supabase
-  const baza = await storage.load("baza", {});
-
-  appState.baza = baza;
+  // 🔥 KLUCZ: czekamy na Supabase i historię
+  await appState.init();
 
   // ==========================
   // NAVIGATION

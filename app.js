@@ -4,25 +4,67 @@
 //        → zbiorówka (suma wszystkich norm) → drukuj
 // =====================================================
 
-// ===== STORAGE =====
-const SK = {
-  historia: "wagaex_historia",
-  baza: "wagaex_baza",
-  stat: "wagaex_stat",
-};
-const saveLS = (k, v) => localStorage.setItem(k, JSON.stringify(v));
-const loadLS = (k, d) => {
-  try {
-    const v = localStorage.getItem(k);
-    return v ? JSON.parse(v) : d;
-  } catch {
-    return d;
+// ===== STORAGE CLASS =====
+class StorageManager {
+  constructor() {
+    this.keys = {
+      historia: "wagaex_historia",
+      baza: "wagaex_baza",
+      stat: "wagaex_stat",
+    };
   }
-};
 
-// ===== STATE =====
-let historia = loadLS(SK.historia, []);
-let baza = loadLS(SK.baza, {});
+  save(key, value) {
+    localStorage.setItem(this.keys[key], JSON.stringify(value));
+  }
+
+  load(key, defaultValue = null) {
+    try {
+      const value = localStorage.getItem(this.keys[key]);
+      return value ? JSON.parse(value) : defaultValue;
+    } catch {
+      return defaultValue;
+    }
+  }
+}
+
+// ===== STATE CLASS =====
+class AppState {
+  constructor(storage) {
+    this.storage = storage;
+    this.historia = this.storage.load('historia', []);
+    this.baza = this.storage.load('baza', {});
+    this.biezacaSesja = [];
+    this.aktualneWyniki = null;
+  }
+
+  saveToStorage() {
+    this.storage.save('historia', this.historia);
+    this.storage.save('baza', this.baza);
+  }
+
+  addToHistoria(sesja) {
+    this.historia.push(sesja);
+    this.saveToStorage();
+  }
+
+  updateBaza(produkty, data) {
+    produkty.forEach(p => {
+      const key = p.nazwa.toLowerCase().trim();
+      this.baza[key] = {
+        nazwa: p.nazwa,
+        waga: p.waga,
+        ostatnioUzyta: data,
+        lacznaIlosc: (this.baza[key]?.lacznaIlosc || 0) + p.ilosc,
+      };
+    });
+    this.saveToStorage();
+  }
+}
+
+// Initialize global instances
+const storage = new StorageManager();
+const appState = new AppState(storage);
 
 // Bieżąca sesja – lista norm dodanych przez użytkownika
 // Każda norma: { id, nr, label, multiplier, produkty: [{nazwa,waga,ilosc,iloscX}], totalKg }
@@ -218,7 +260,7 @@ function obliczWage() {
     document.getElementById("wyniki-tabela").innerHTML = h;
     document.getElementById("wyniki-suma").innerHTML = "";
     document.getElementById("wyniki-wrap").style.display = "block";
-    aktualneWyniki = null;
+    appState.aktualneWyniki = null;
     return;
   }
 
@@ -227,7 +269,7 @@ function obliczWage() {
     return;
   }
 
-  aktualneWyniki = { produkty, mult, data: new Date().toISOString() };
+  appState.aktualneWyniki = { produkty, mult, data: new Date().toISOString() };
   renderWyniki(produkty, mult);
   dodajDoSesji();
 }
@@ -291,16 +333,16 @@ function renderWyniki(produkty, mult) {
 
 // ===== DODAJ DO SESJI =====
 function dodajDoSesji() {
-  if (!aktualneWyniki) {
+  if (!appState.aktualneWyniki) {
     toast("Najpierw oblicz normę", true);
     return;
   }
 
-  const { produkty, mult } = aktualneWyniki;
+  const { produkty, mult } = appState.aktualneWyniki;
 
-  if (biezacaSesja.length + mult > 8) {
+  if (appState.biezacaSesja.length + mult > 8) {
     toast(
-      `Za dużo norm – zostało miejsce na ${8 - biezacaSesja.length}, a chcesz dodać ${mult}`,
+      `Za dużo norm – zostało miejsce na ${8 - appState.biezacaSesja.length}, a chcesz dodać ${mult}`,
       true,
     );
     return;
@@ -319,8 +361,8 @@ function dodajDoSesji() {
   const now = new Date().toISOString();
 
   for (let i = 0; i < mult; i++) {
-    const nr = biezacaSesja.length + 1;
-    biezacaSesja.push({
+    const nr = appState.biezacaSesja.length + 1;
+    appState.biezacaSesja.push({
       id: Date.now() + i,
       nr,
       label: `Norma ${nr}`,
@@ -331,16 +373,7 @@ function dodajDoSesji() {
   }
 
   // Aktualizuj bazę produktów
-  produktyJednej.forEach((p) => {
-    const key = p.nazwa.toLowerCase().trim();
-    baza[key] = {
-      nazwa: p.nazwa,
-      waga: p.waga,
-      ostatnioUzyta: now,
-      lacznaIlosc: (baza[key]?.lacznaIlosc || 0) + p.ilosc * mult,
-    };
-  });
-  saveLS(SK.baza, baza);
+  appState.updateBaza(produktyJednej.map(p => ({ ...p, ilosc: p.ilosc * mult })), now);
 
   aktualizujBadge();
   renderSesjaChips();
@@ -348,7 +381,7 @@ function dodajDoSesji() {
   document.getElementById("inputText").value = "";
   document.getElementById("multiplier").value = 1;
   document.getElementById("wyniki-wrap").style.display = "none";
-  aktualneWyniki = null;
+  appState.aktualneWyniki = null;
   aktualizujHint();
 
   const dodano = mult > 1 ? `${mult} normy` : `1 norma`;
@@ -360,17 +393,17 @@ function dodajDoSesji() {
 // ===== RENDER CHIPS SESJI =====
 function renderSesjaChips() {
   const pasek = document.getElementById("sesja-pasek");
-  if (!biezacaSesja.length) {
+  if (!appState.biezacaSesja.length) {
     pasek.style.display = "none";
     return;
   }
   pasek.style.display = "block";
 
   document.getElementById("sesja-licznik").textContent =
-    `${biezacaSesja.length} / 8 norm`;
+    `${appState.biezacaSesja.length} / 8 norm`;
 
   const lista = document.getElementById("sesja-normy-lista");
-  lista.innerHTML = biezacaSesja
+  lista.innerHTML = appState.biezacaSesja
     .map(
       (n) => `
     <div class="norma-chip">
@@ -387,16 +420,16 @@ function renderSesjaChips() {
     )
     .join("");
 
-  const totalAll = biezacaSesja.reduce((s, n) => s + n.totalKg, 0);
+  const totalAll = appState.biezacaSesja.reduce((s, n) => s + n.totalKg, 0);
   document.getElementById("sesja-total-kg").innerHTML =
     `Łączna waga sesji: <strong>${totalAll.toFixed(2)} kg</strong>`;
 }
 
 // ===== USUŃ NORMĘ =====
 function usunNorme(id) {
-  biezacaSesja = biezacaSesja.filter((n) => n.id !== id);
+  appState.biezacaSesja = appState.biezacaSesja.filter((n) => n.id !== id);
   // Przenumeruj
-  biezacaSesja.forEach((n, i) => {
+  appState.biezacaSesja.forEach((n, i) => {
     n.nr = i + 1;
     n.label =
       n.multiplier > 1 ? `Norma ${i + 1} (×${n.multiplier})` : `Norma ${i + 1}`;
@@ -408,8 +441,8 @@ function usunNorme(id) {
 // ===== RESET SESJI =====
 function resetSesji() {
   if (!confirm("Wyczyścić bieżącą sesję (wszystkie normy)?")) return;
-  biezacaSesja = [];
-  aktualneWyniki = null;
+  appState.biezacaSesja = [];
+  appState.aktualneWyniki = null;
   aktualizujBadge();
   renderSesjaChips();
   document.getElementById("wyniki-wrap").style.display = "none";
@@ -422,7 +455,7 @@ function resetSesji() {
 // ===== ZBIORÓWKA =====
 function renderZbiorcza() {
   const el = document.getElementById("zbiorcza-content");
-  if (!biezacaSesja.length) {
+  if (!appState.biezacaSesja.length) {
     el.innerHTML =
       '<div class="baza-empty"><div class="big">∑</div>Dodaj co najmniej jedną normę w zakładce Kalkulator.</div>';
     return;
@@ -430,7 +463,7 @@ function renderZbiorcza() {
 
   // Zsumuj produkty po nazwie (case-insensitive)
   const mapa = {};
-  for (const norma of biezacaSesja) {
+  for (const norma of appState.biezacaSesja) {
     for (const p of norma.produkty) {
       const key = p.nazwa.toLowerCase().trim();
       if (!mapa[key])
@@ -458,7 +491,7 @@ function renderZbiorcza() {
     .join("");
 
   // Tagi norm
-  const tags = biezacaSesja
+  const tags = appState.biezacaSesja
     .map(
       (n) =>
         `<span class="norma-tag">${n.label} · ${n.totalKg.toFixed(2)} kg</span>`,
@@ -486,17 +519,17 @@ function renderZbiorcza() {
       </tfoot>
     </table>
     <div style="margin-top:10px;color:var(--text3);font-size:12px;text-align:right">
-      ${biezacaSesja.length} norm · ${lista.length} unikalnych produktów
+      ${appState.biezacaSesja.length} norm · ${lista.length} unikalnych produktów
     </div>`;
 }
 
 // ===== DRUKUJ NORMĘ (bieżąca obliczona) =====
 function drukujNorme() {
-  if (!aktualneWyniki) {
+  if (!appState.aktualneWyniki) {
     toast("Najpierw oblicz normę", true);
     return;
   }
-  const { produkty, data } = aktualneWyniki;
+  const { produkty, data } = appState.aktualneWyniki;
   drukujListeProduktow(
     produkty.map((p) => ({
       nazwa: p.nazwa,
@@ -510,7 +543,7 @@ function drukujNorme() {
 
 // ===== DRUKUJ NORMĘ Z SESJI (po id) =====
 function drukujNormeZSesji(id) {
-  const n = biezacaSesja.find((x) => x.id === id);
+  const n = appState.biezacaSesja.find((x) => x.id === id);
   if (!n) return;
   drukujListeProduktow(
     n.produkty.map((p) => ({
@@ -593,13 +626,13 @@ function drukujListeProduktow(lista, tytul, data) {
 
 // ===== DRUKUJ ZBIORÓWKĘ =====
 function drukujZbiorcza() {
-  if (!biezacaSesja.length) {
+  if (!appState.biezacaSesja.length) {
     toast("Brak norm w sesji", true);
     return;
   }
 
   const mapa = {};
-  for (const norma of biezacaSesja) {
+  for (const norma of appState.biezacaSesja) {
     for (const p of norma.produkty) {
       const key = p.nazwa.toLowerCase().trim();
       if (!mapa[key])
@@ -613,7 +646,7 @@ function drukujZbiorcza() {
   const totalKg = lista.reduce((s, p) => s + p.waga * p.iloscTotal, 0);
   const d = new Date().toLocaleString("pl-PL");
 
-  const normaInfo = biezacaSesja
+  const normaInfo = appState.biezacaSesja
     .map((n) => `${n.label}: ${n.totalKg.toFixed(2)} kg`)
     .join(" | ");
 
@@ -631,7 +664,7 @@ function drukujZbiorcza() {
     .join("");
 
   document.getElementById("printArea").innerHTML = `
-    <h2>Zbiorówka – ${biezacaSesja.length} norm</h2>
+    <h2>Zbiorówka – ${appState.biezacaSesja.length} norm</h2>
     <div class="print-date">Data: ${d}</div>
     <div class="print-normy">${normaInfo}</div>
 
@@ -645,44 +678,35 @@ function drukujZbiorcza() {
 
 // ===== ZAPISZ SESJĘ DO HISTORII =====
 function zapiszSesje() {
-  if (!biezacaSesja.length) {
+  if (!appState.biezacaSesja.length) {
     toast("Brak norm do zapisania", true);
     return;
   }
 
   const totalKg = parseFloat(
-    biezacaSesja.reduce((s, n) => s + n.totalKg, 0).toFixed(2),
+    appState.biezacaSesja.reduce((s, n) => s + n.totalKg, 0).toFixed(2),
   );
 
   const sesja = {
     id: Date.now(),
-    nr: historia.length + 1,
+    nr: appState.historia.length + 1,
     data: new Date().toISOString(),
-    normy: biezacaSesja.map((n) => ({ ...n })),
+    normy: appState.biezacaSesja.map((n) => ({ ...n })),
     totalKg,
   };
 
-  historia.push(sesja);
-  saveLS(SK.historia, historia);
+  appState.addToHistoria(sesja);
 
   // Aktualizuj bazę produktów
-  for (const norma of biezacaSesja) {
-    for (const p of norma.produkty) {
-      const key = p.nazwa.toLowerCase().trim();
-      baza[key] = {
-        nazwa: p.nazwa,
-        waga: p.waga,
-        ostatnioUzyta: sesja.data,
-        lacznaIlosc: (baza[key]?.lacznaIlosc || 0) + p.iloscX,
-      };
-    }
-  }
-  saveLS(SK.baza, baza);
-  saveLS(SK.stat, loadLS(SK.stat, 0) + 1);
+  appState.updateBaza(
+    appState.biezacaSesja.flatMap(n => n.produkty.map(p => ({ ...p, ilosc: p.iloscX }))),
+    sesja.data
+  );
+  storage.save('stat', storage.load('stat', 0) + 1);
 
   // Reset sesji po zapisaniu
-  biezacaSesja = [];
-  aktualneWyniki = null;
+  appState.biezacaSesja = [];
+  appState.aktualneWyniki = null;
   aktualizujBadge();
   renderSesjaChips();
   document.getElementById("wyniki-wrap").style.display = "none";
@@ -693,13 +717,13 @@ function zapiszSesje() {
 // ===== HISTORIA =====
 function renderHistorie() {
   const el = document.getElementById("historia-lista");
-  if (!historia.length) {
+  if (!appState.historia.length) {
     el.innerHTML =
       '<div class="baza-empty"><div class="big">📋</div>Brak zapisanych sesji.</div>';
     return;
   }
 
-  el.innerHTML = [...historia]
+  el.innerHTML = [...appState.historia]
     .reverse()
     .map((s) => {
       const d = new Date(s.data).toLocaleString("pl-PL", {
@@ -772,16 +796,16 @@ function toggleSesja(id) {
   document.getElementById("tog-" + id).classList.toggle("open");
 }
 function usunSesje(id) {
-  historia = historia.filter((s) => s.id !== id);
-  saveLS(SK.historia, historia);
+  appState.historia = appState.historia.filter((s) => s.id !== id);
+  appState.saveToStorage();
   aktualizujBadge();
   renderHistorie();
   toast("Sesja usunięta");
 }
 function wyczyscHistorie() {
   if (!confirm("Usunąć całą historię sesji?")) return;
-  historia = [];
-  saveLS(SK.historia, historia);
+  appState.historia = [];
+  appState.saveToStorage();
   aktualizujBadge();
   renderHistorie();
   toast("Historia wyczyszczona");
@@ -838,7 +862,7 @@ function renderBaze() {
   const q = (document.getElementById("bazaSzukaj")?.value || "")
     .toLowerCase()
     .trim();
-  let entries = Object.values(baza);
+  let entries = Object.values(appState.baza);
   if (q) entries = entries.filter((p) => p.nazwa.toLowerCase().includes(q));
   entries.sort((a, b) => new Date(b.ostatnioUzyta) - new Date(a.ostatnioUzyta));
 
@@ -877,8 +901,8 @@ function renderBaze() {
 }
 
 function usunZBazy(key) {
-  delete baza[key];
-  saveLS(SK.baza, baza);
+  delete appState.baza[key];
+  appState.saveToStorage();
   aktualizujBadge();
   renderBaze();
   toast("Produkt usunięty z bazy");
@@ -890,15 +914,15 @@ function wyczyscFormularz() {
   document.getElementById("inputText").value = "";
   document.getElementById("multiplier").value = 1;
   document.getElementById("wyniki-wrap").style.display = "none";
-  aktualneWyniki = null;
+  appState.aktualneWyniki = null;
   aktualizujHint();
 }
 
 function aktualizujBadge() {
-  const bc = Object.keys(baza).length;
-  document.getElementById("badgeNorm").textContent = biezacaSesja.length;
-  document.getElementById("badgeHistoria").textContent = historia.length;
+  const bc = Object.keys(appState.baza).length;
+  document.getElementById("badgeNorm").textContent = appState.biezacaSesja.length;
+  document.getElementById("badgeHistoria").textContent = appState.historia.length;
   document.getElementById("badgeBaza").textContent = bc;
-  document.getElementById("statNormy").textContent = biezacaSesja.length;
+  document.getElementById("statNormy").textContent = appState.biezacaSesja.length;
   document.getElementById("statBaza").textContent = bc;
 }

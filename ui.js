@@ -114,6 +114,7 @@ export function renderZbiorcza(appState) {
       (p, i) => `
     <tr>
       <td class="mono" style="color:var(--text3);font-size:11px">${i + 1}</td>
+      <td class="mono" style="color:var(--accent);font-weight:600">${esc(p.kod || "—")}</td>
       <td>${esc(p.nazwa)}</td>
       <td class="center mono"><strong>${Number.isInteger(p.iloscTotal) ? p.iloscTotal : p.iloscTotal.toFixed(2)}</strong></td>
       <td class="center mono">${p.waga} kg</td>
@@ -136,6 +137,7 @@ export function renderZbiorcza(appState) {
       <thead>
         <tr>
           <th>#</th>
+          <th class="mono">Kod</th>
           <th>Nazwa produktu</th>
           <th class="center">Łączna ilość</th>
           <th class="center">Waga jedn.</th>
@@ -145,7 +147,7 @@ export function renderZbiorcza(appState) {
       <tbody>${rows}</tbody>
       <tfoot>
         <tr>
-          <td colspan="4" class="right">Łączna waga zbiorówki:</td>
+          <td colspan="5" class="right">Łączna waga zbiorówki:</td>
           <td class="right">${totalKg.toFixed(2)} kg</td>
         </tr>
       </tfoot>
@@ -299,6 +301,7 @@ export async function drukujZbiorcza(appState) {
     <tr>
       <td style="${S.tdCheck}"><input type="checkbox" style="width:12px;height:12px;margin:0;border:1px solid #000;"/></td>
       <td style="${S.td}">${i + 1}</td>
+      <td style="${S.td}" title="Kod: ${esc(p.kod || "—")}">${esc(p.kod || "—")}</td>
       <td style="${S.td}">${esc(p.nazwa)}</td>
       <td style="${S.tdC}">${p.iloscTotal}</td>
       <td style="${S.tdC}">${p.waga}</td>
@@ -316,6 +319,7 @@ export async function drukujZbiorcza(appState) {
           <tr>
             <th style="${S.thCheck}">✓</th>
             <th style="${S.th}">#</th>
+            <th style="${S.th}">Kod</th>
             <th style="${S.th}">Nazwa produktu</th>
             <th style="${S.thC}">Łączna ilość</th>
             <th style="${S.thC}">Waga jedn. (kg)</th>
@@ -325,7 +329,7 @@ export async function drukujZbiorcza(appState) {
         <tbody>${rows}</tbody>
         <tfoot>
           <tr>
-            <td colspan="5" style="${S.tfTd}">Łączna waga:</td>
+            <td colspan="6" style="${S.tfTd}">Łączna waga:</td>
             <td style="${S.tfTdR}">${totalKg.toFixed(2)} kg</td>
           </tr>
         </tfoot>
@@ -445,6 +449,7 @@ export function renderHistorie(appState) {
           (p, i) => `
       <tr>
         <td class="mono" style="color:var(--text3);font-size:11px">${i + 1}</td>
+        <td class="mono" style="color:var(--accent);font-weight:600">${esc(p.kod || "—")}</td>
         <td>${esc(p.nazwa)}</td>
         <td class="center mono">${Number.isInteger(p.iloscTotal) ? p.iloscTotal : p.iloscTotal.toFixed(2)}</td>
         <td class="center mono">${p.waga} kg</td>
@@ -467,9 +472,9 @@ export function renderHistorie(appState) {
       </div>
       <div class="sesja-body" id="body-${safeId}">
         <table class="results-table" style="margin-top:12px">
-          <thead><tr><th>#</th><th>Nazwa</th><th class="center">Ilość łączna</th><th class="center">Waga jedn.</th><th class="right">Waga łączna</th></tr></thead>
+          <thead><tr><th>#</th><th class="mono">Kod</th><th>Nazwa</th><th class="center">Ilość łączna</th><th class="center">Waga jedn.</th><th class="right">Waga łączna</th></tr></thead>
           <tbody>${rows}</tbody>
-          <tfoot><tr><td colspan="4" class="right">Łączna waga:</td><td class="right">${s.totalKg.toFixed(2)} kg</td></tr></tfoot>
+          <tfoot><tr><td colspan="5" class="right">Łączna waga:</td><td class="right">${s.totalKg.toFixed(2)} kg</td></tr></tfoot>
         </table>
         <div class="sesja-actions">
           <button class="btn-secondary" onclick="drukujHistoriaSesje('${safeId}')">🖨 Drukuj zbiorówkę</button>
@@ -518,7 +523,9 @@ export function drukujHistoriaSesje(appState, id) {
     .map(
       (p, i) => `
     <tr>
-      <td>${i + 1}</td><td>${esc(p.nazwa)}</td>
+      <td>${i + 1}</td>
+      <td>${esc(p.kod || "—")}</td>
+      <td>${esc(p.nazwa)}</td>
       <td style="text-align:center">${p.iloscTotal}</td>
       <td style="text-align:center">${p.waga}</td>
       <td style="text-align:right">${(p.waga * p.iloscTotal).toFixed(2)}</td>
@@ -531,9 +538,9 @@ export function drukujHistoriaSesje(appState, id) {
     <div class="print-date">Data: ${d}</div>
     <div class="print-normy">${normaInfo}</div>
     <table>
-      <thead><tr><th>#</th><th>Nazwa produktu</th><th style="text-align:center">Łączna ilość</th><th style="text-align:center">Waga jedn. (kg)</th><th style="text-align:right">Waga łączna (kg)</th></tr></thead>
+      <thead><tr><th>#</th><th>Kod</th><th>Nazwa produktu</th><th style="text-align:center">Łączna ilość</th><th style="text-align:center">Waga jedn. (kg)</th><th style="text-align:right">Waga łączna (kg)</th></tr></thead>
       <tbody>${rows}</tbody>
-      <tfoot><tr><td colspan="4" style="text-align:right">Łączna waga:</td><td style="text-align:right">${totalKg.toFixed(2)} kg</td></tr></tfoot>
+      <tfoot><tr><td colspan="5" style="text-align:right">Łączna waga:</td><td style="text-align:right">${totalKg.toFixed(2)} kg</td></tr></tfoot>
     </table>`;
   window.print();
 }
@@ -570,6 +577,7 @@ export function renderBaze(appState) {
       return `
         <tr>
           <td>${i + 1}</td>
+          <td class="mono" style="color:var(--accent);font-weight:600">${esc(p.kod || "—")}</td>
           <td>${esc(p.nazwa)}</td>
           <td class="center">${p.waga} kg</td>
           <td class="center">${d}</td>
@@ -588,6 +596,7 @@ export function renderBaze(appState) {
       <thead>
         <tr>
           <th>#</th>
+          <th class="mono">Kod</th>
           <th>Nazwa</th>
           <th class="center">Waga</th>
           <th class="center">Ostatnio</th>

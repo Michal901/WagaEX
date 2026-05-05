@@ -37,6 +37,7 @@ export class AppState {
       this.baza[key] = {
         id: key,
         nazwa: p.nazwa,
+        kod: p.kod || "",
         waga: p.waga,
         ostatnioUzyta: data,
         lacznaIlosc: (this.baza[key]?.lacznaIlosc || 0) + p.ilosc,

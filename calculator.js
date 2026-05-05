@@ -34,18 +34,30 @@ export function parsujLinie(line) {
   if (isNaN(waga) || waga <= 0) return { blad: "Waga ≤ 0", linia: t };
   if (isNaN(ilosc) || ilosc <= 0) return { blad: "Ilość ≤ 0", linia: t };
 
-  // Kod produktu: ostatnie słowo (alfanumeryczne) PRZED wagą
+  // Kod produktu: ostatnie słowo pasujące do schematu [A-Za-z]?\d+[A-Za-z]?
+  // (opcjonalna litera + cyfry + opcjonalna litera)
   const przedWaga = reszta.slice(0, wm.index).trim();
   let kod = "";
-  const kodMatch = przedWaga.match(/([A-Za-z0-9]+)\s*$/);
-  if (kodMatch) {
-    kod = kodMatch[1];
+  
+  // Dziel na słowa i szukaj od końca pasującego do schematu kodu
+  const slowa = przedWaga.split(/\s+/);
+  for (let i = slowa.length - 1; i >= 0; i--) {
+    // Usuń znaki interpunkcyjne na końcu
+    const slowo = slowa[i].replace(/[,.;:!?]+$/, "");
+    
+    // Ignoruj jednostki fizyczne (liczba + litera): 1500W, 380mm, 2kg, etc.
+    if (/^\d+\.?\d*[A-Z]?$/.test(slowo)) continue;
+    
+    // Szukaj kodów: zawierające litery i cyfry (bardziej reliable)
+    // oraz zaczające się na literę (bardziej kodopodobne)
+    if (/^[A-Z]/i.test(slowo) && /\d/.test(slowo)) {
+      kod = slowo;
+      break;
+    }
   }
 
-  // Nazwa: wszystko przed kodem (lub przed wagą jeśli brak kodu)
-  const nazwa = kod 
-    ? przedWaga.slice(0, przedWaga.lastIndexOf(kod)).trim() 
-    : przedWaga;
+  // Nazwa: PEŁNA nazwa (bez usuwania kodu) - wszystko przed wagą
+  const nazwa = przedWaga;
   
   return { nazwa, kod, waga, ilosc, linia: t };
 }

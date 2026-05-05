@@ -68,6 +68,7 @@ export class StorageManager {
     const rows = Object.entries(baza).map(([id, p]) => ({
       id: normId(id),
       nazwa: p.nazwa,
+      kod: p.kod || "",
       waga: toNumber(p.waga),
       ostatnio_uzyta: toISO(p.ostatnioUzyta),
     }));
@@ -102,6 +103,7 @@ export class StorageManager {
       result[key] = {
         id: key,
         nazwa: p.nazwa,
+        kod: p.kod || "",
         waga: toNumber(p.waga),
         ostatnioUzyta: toISO(p.ostatnio_uzyta),
       };

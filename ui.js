@@ -20,6 +20,7 @@ export function renderSesjaChips(appState) {
           (p, i) => `
       <tr>
         <td class="mono" style="color:var(--text3);font-size:11px">${i + 1}</td>
+        <td class="mono" style="color:var(--accent);font-weight:600">${esc(p.kod || "—")}</td>
         <td>${esc(p.nazwa)}</td>
         <td class="center mono">${p.ilosc}</td>
         <td class="center mono">${p.waga} kg</td>
@@ -41,11 +42,12 @@ export function renderSesjaChips(appState) {
       </div>
       <div class="norma-body" id="body-norma-${n.id}">
         <table class="results-table" style="margin-top:12px">
-          <thead><tr><th>#</th><th>Nazwa</th><th class="center">Ilość</th><th class="center">Waga jedn.</th><th class="right">Waga łączna</th></tr></thead>
+          <thead><tr><th>#</th><th class="mono">Kod</th><th>Nazwa</th><th class="center">Ilość</th><th class="center">Waga jedn.</th><th class="right">Waga łączna</th></tr></thead>
           <tbody>${rows}</tbody>
-          <tfoot><tr><td colspan="4" class="right">Łączna waga:</td><td class="right">${n.totalKg.toFixed(2)} kg</td></tr></tfoot>
+          <tfoot><tr><td colspan="5" class="right">Łączna waga:</td><td class="right">${n.totalKg.toFixed(2)} kg</td></tr></tfoot>
         </table>
         <div class="norma-actions">
+          <button class="btn-secondary" onclick="kopijNormeZSesji('${n.id}')">📋 Kopiuj normę</button>
           <button class="btn-secondary" onclick="drukujNormeZSesji('${n.id}')">🖨 Drukuj normę</button>
           <button class="btn-danger" onclick="usunNorme('${n.id}')">🗑 Usuń</button>
         </div>
@@ -161,6 +163,7 @@ export function drukujNorme(appState) {
   const { produkty, data } = appState.aktualneWyniki;
   drukujListeProduktow(
     produkty.map((p) => ({
+      kod: p.kod,
       nazwa: p.nazwa,
       waga: p.waga,
       iloscTotal: p.ilosc,
@@ -175,6 +178,7 @@ export function drukujNormeZSesji(appState, id) {
   if (!n) return;
   drukujListeProduktow(
     n.produkty.map((p) => ({
+      kod: p.kod,
       nazwa: p.nazwa,
       waga: p.waga,
       iloscTotal: p.ilosc,
@@ -217,6 +221,7 @@ export function drukujListeProduktow(lista, tytul, data) {
     <tr>
       <td style="${S.tdCheck}"><input type="checkbox" style="width:12px;height:12px;margin:0;"/></td>
       <td style="${S.tdLp}">${i + 1}.</td>
+      <td style="${S.td}" title="Kod: ${esc(p.kod || "—")}">${esc(p.kod || "—")}</td>
       <td style="${S.td}">${esc(p.nazwa)}</td>
       <td style="${S.tdC}">${p.iloscTotal}</td>
       <td style="${S.tdC}">${p.waga}</td>
@@ -233,6 +238,7 @@ export function drukujListeProduktow(lista, tytul, data) {
           <tr>
             <th style="${S.thCheck}">✓</th>
             <th style="${S.thLp}">L.p.</th>
+            <th style="${S.th}">Kod</th>
             <th style="${S.th}">Nazwa produktu</th>
             <th style="${S.thC}">Ilość</th>
             <th style="${S.thC}">Waga jednostkowa (kg)</th>
@@ -242,7 +248,7 @@ export function drukujListeProduktow(lista, tytul, data) {
         <tbody>${rows}</tbody>
         <tfoot>
           <tr>
-            <td colspan="5" style="${S.tfTd}">Łączna waga:</td>
+            <td colspan="6" style="${S.tfTd}">Łączna waga:</td>
             <td style="${S.tfTdR}">${totalKg.toFixed(2)} kg</td>
           </tr>
         </tfoot>

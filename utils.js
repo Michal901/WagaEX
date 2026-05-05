@@ -22,7 +22,7 @@ export function agregujProdukty(normy) {
     for (const p of norma.produkty) {
       const key = p.nazwa.toLowerCase().trim();
       if (!mapa[key])
-        mapa[key] = { nazwa: p.nazwa, waga: p.waga, iloscTotal: 0 };
+        mapa[key] = { nazwa: p.nazwa, kod: p.kod, waga: p.waga, iloscTotal: 0 };
       mapa[key].iloscTotal += p.iloscX;
     }
   }

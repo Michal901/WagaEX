@@ -34,9 +34,20 @@ export function parsujLinie(line) {
   if (isNaN(waga) || waga <= 0) return { blad: "Waga ≤ 0", linia: t };
   if (isNaN(ilosc) || ilosc <= 0) return { blad: "Ilość ≤ 0", linia: t };
 
-  // Nazwa: wszystko przed wagą w reszta
-  const nazwa = reszta.slice(0, wm.index).trim() || reszta;
-  return { nazwa, waga, ilosc, linia: t };
+  // Kod produktu: ostatnie słowo (alfanumeryczne) PRZED wagą
+  const przedWaga = reszta.slice(0, wm.index).trim();
+  let kod = "";
+  const kodMatch = przedWaga.match(/([A-Za-z0-9]+)\s*$/);
+  if (kodMatch) {
+    kod = kodMatch[1];
+  }
+
+  // Nazwa: wszystko przed kodem (lub przed wagą jeśli brak kodu)
+  const nazwa = kod 
+    ? przedWaga.slice(0, przedWaga.lastIndexOf(kod)).trim() 
+    : przedWaga;
+  
+  return { nazwa, kod, waga, ilosc, linia: t };
 }
 
 export function obliczWage(appState) {
@@ -103,6 +114,7 @@ export function renderWyniki(produkty, mult) {
 
     rows += `<tr>
       <td class="mono" style="color:var(--text3);font-size:11px">${i + 1}</td>
+      <td class="mono" style="color:var(--accent);font-weight:600">${esc(p.kod || "—")}</td>
       <td>${esc(p.nazwa)}</td>
       <td class="center mono">${ilCell}</td>
       <td class="center mono">${p.waga} kg</td>
@@ -115,6 +127,7 @@ export function renderWyniki(produkty, mult) {
       <thead>
         <tr>
           <th>#</th>
+          <th class="mono">Kod</th>
           <th>Nazwa produktu</th>
           <th class="center">Ilość${mult > 1 ? " (×" + mult + ")" : ""}</th>
           <th class="center">Waga jedn.</th>
@@ -124,7 +137,7 @@ export function renderWyniki(produkty, mult) {
       <tbody>${rows}</tbody>
       <tfoot>
         <tr>
-          <td colspan="4" class="right">Suma normy${mult > 1 ? " ×" + mult : ""}:</td>
+          <td colspan="5" class="right">Suma normy${mult > 1 ? " ×" + mult : ""}:</td>
           <td class="right">${tN.toFixed(2)} kg</td>
         </tr>
       </tfoot>
@@ -160,6 +173,7 @@ export function dodajDoSesji(appState) {
   // Każda norma ma oryginalne ilości (bez mnożnika)
   const produktyJednej = produkty.map((p) => ({
     nazwa: p.nazwa,
+    kod: p.kod,
     waga: p.waga,
     ilosc: p.ilosc,
     iloscX: p.ilosc,
@@ -232,6 +246,85 @@ function wyczyscFormularz(appState) {
   document.getElementById("wyniki-wrap").style.display = "none";
   appState.aktualneWyniki = null;
   aktualizujHint();
+}
+
+// Generuj format wejściowy na podstawie obliczonych wyników
+export function generujFormatWejsciowy(appState) {
+  if (!appState.aktualneWyniki) {
+    return null;
+  }
+
+  const { produkty, mult } = appState.aktualneWyniki;
+  
+  // Jeśli mult > 1, użyj zmultiplikowanych ilości (iloscX)
+  // Jeśli mult = 1, użyj oryginalnych ilości
+  const lines = produkty.map((p) => {
+    const iloscDoKopii = mult > 1 ? p.iloscX : p.ilosc;
+    // Format: nazwa waga kg ilość
+    const iloscFormatted = Number.isInteger(iloscDoKopii) 
+      ? iloscDoKopii 
+      : iloscDoKopii.toFixed(2).replace(/\.?0+$/, '');
+    return `${p.nazwa} ${p.waga}kg	${iloscFormatted}`;
+  });
+  
+  return lines.join('\n');
+}
+
+// Kopiuj normę do schowka
+export function kopijNorme(appState) {
+  const tekst = generujFormatWejsciowy(appState);
+  
+  if (!tekst) {
+    toast("Najpierw oblicz normę", true);
+    return;
+  }
+  
+  navigator.clipboard.writeText(tekst).then(() => {
+    toast("✓ Norma skopiowana do schowka");
+  }).catch(() => {
+    // Fallback dla starszych przeglądarek
+    const textarea = document.createElement('textarea');
+    textarea.value = tekst;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+    toast("✓ Norma skopiowana do schowka");
+  });
+}
+
+// Kopiuj normę z sesji do schowka
+export function kopijNormeZSesji(appState, id) {
+  const norma = appState.biezacaSesja.find((n) => n.id === id);
+  if (!norma) {
+    toast("Norma nie znaleziona", true);
+    return;
+  }
+
+  // Generuj format: nazwa kod waga kg ilość
+  const lines = norma.produkty.map((p) => {
+    const iloscFormatted = Number.isInteger(p.ilosc)
+      ? p.ilosc
+      : p.ilosc.toFixed(2).replace(/\.?0+$/, '');
+    // Jeśli jest kod, umieść go na końcu nazwy
+    const nazwaZKodem = p.kod ? `${p.nazwa} ${p.kod}` : p.nazwa;
+    return `${nazwaZKodem} ${p.waga}kg	${iloscFormatted}`;
+  });
+  
+  const tekst = lines.join('\n');
+
+  navigator.clipboard.writeText(tekst).then(() => {
+    toast("✓ Norma skopiowana do schowka");
+  }).catch(() => {
+    // Fallback dla starszych przeglądarek
+    const textarea = document.createElement('textarea');
+    textarea.value = tekst;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+    toast("✓ Norma skopiowana do schowka");
+  });
 }
 
 export { aktualizujHint, getMnoznik, wyczyscFormularz, zmienMnoznik };

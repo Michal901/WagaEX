@@ -5,6 +5,8 @@
 import {
   aktualizujHint,
   dodajDoSesji,
+  kopijNorme,
+  kopijNormeZSesji,
   obliczWage,
   wyczyscFormularz,
   zmienMnoznik,
@@ -42,6 +44,7 @@ const appState = new AppState(storage);
 // GLOBAL FUNCTIONS (HTML)
 // ==========================
 window.drukujNormeZSesji = (id) => drukujNormeZSesji(appState, id);
+window.kopijNormeZSesji = (id) => kopijNormeZSesji(appState, id);
 window.usunNorme = (id) => usunNorme(appState, id);
 window.toggleNorma = toggleNorma;
 window.toggleSesja = toggleSesja;

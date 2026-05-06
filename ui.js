@@ -442,7 +442,46 @@ export function renderHistorie(appState) {
       const normaCount = s.normy ? s.normy.length : "?";
       const safeId = String(s.id).replace(/'/g, "\\'");
 
-      // Zbiorówka per sesja
+      const sesjaNormy = (s.normy || [])
+        .map((n, idx) => {
+          const normaSafeId = `history-${safeId}-${n.id}`;
+          const normsRows = n.produkty
+            .map(
+              (p, i) => `
+      <tr>
+        <td class="mono" style="color:var(--text3);font-size:11px">${i + 1}</td>
+        <td class="mono" style="color:var(--accent);font-weight:600">${esc(p.kod || "—")}</td>
+        <td>${esc(p.nazwa)}</td>
+        <td class="center mono">${p.ilosc}</td>
+        <td class="center mono">${p.waga} kg</td>
+        <td class="right mono"><strong>${(p.waga * p.ilosc).toFixed(2)} kg</strong></td>
+      </tr>`,
+            )
+            .join("");
+
+          return `
+          <div class="norma-chip">
+            <div class="norma-chip-header" onclick="toggleNorma('${normaSafeId}')">
+              <div class="norma-chip-left">
+                <span class="norma-chip-nr">${n.label}</span>
+                <span class="norma-chip-info">${n.produkty.length} produktów</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span class="norma-chip-kg ${n.totalKg > 50 ? "warn" : ""}">${n.totalKg.toFixed(2)} kg${n.totalKg > 50 ? " ⚠️" : ""}</span>
+                <span class="norma-toggle" id="tog-norma-${normaSafeId}">›</span>
+              </div>
+            </div>
+            <div class="norma-body" id="body-norma-${normaSafeId}">
+              <table class="results-table" style="margin-top:12px">
+                <thead><tr><th>#</th><th class="mono">Kod</th><th>Nazwa</th><th class="center">Ilość</th><th class="center">Waga jedn.</th><th class="right">Waga łączna</th></tr></thead>
+                <tbody>${normsRows}</tbody>
+                <tfoot><tr><td colspan="5" class="right">Łączna waga:</td><td class="right">${n.totalKg.toFixed(2)} kg</td></tr></tfoot>
+              </table>
+            </div>
+          </div>`;
+        })
+        .join("");
+
       const lista = s.normy ? agregujProdukty(s.normy) : [];
       const rows = lista
         .map(
@@ -471,14 +510,52 @@ export function renderHistorie(appState) {
         </div>
       </div>
       <div class="sesja-body" id="body-${safeId}">
-        <table class="results-table" style="margin-top:12px">
-          <thead><tr><th>#</th><th class="mono">Kod</th><th>Nazwa</th><th class="center">Ilość łączna</th><th class="center">Waga jedn.</th><th class="right">Waga łączna</th></tr></thead>
-          <tbody>${rows}</tbody>
-          <tfoot><tr><td colspan="5" class="right">Łączna waga:</td><td class="right">${s.totalKg.toFixed(2)} kg</td></tr></tfoot>
-        </table>
-        <div class="sesja-actions">
-          <button class="btn-secondary" onclick="drukujHistoriaSesje('${safeId}')">🖨 Drukuj zbiorówkę</button>
-          <button class="btn-danger" onclick="usunSesje('${safeId}')">🗑 Usuń</button>
+        <div class="sesja-description">Kliknij sekcję poniżej, aby otworzyć szczegóły norm lub zbiorówkę tej sesji.</div>
+
+        <div class="sesja-section">
+          <div class="sesja-subheader" onclick="togglePodsekcja('session-${safeId}')">
+            <div>
+              <span class="sesja-subtitle">Normy w sesji</span>
+              <span class="sesja-subinfo">${normaCount} norm · ${s.totalKg.toFixed(2)} kg</span>
+            </div>
+            <span class="sesja-toggle" id="tog-sub-session-${safeId}">›</span>
+          </div>
+          <div class="sesja-subbody" id="body-sub-session-${safeId}">${sesjaNormy}</div>
+        </div>
+
+        <div class="sesja-section">
+          <div class="sesja-subheader" onclick="togglePodsekcja('zbiorowka-${safeId}')">
+            <div>
+              <span class="sesja-subtitle">Zbiorówka</span>
+              <span class="sesja-subinfo">${lista.length} unikalnych produktów</span>
+            </div>
+            <span class="sesja-toggle" id="tog-sub-zbiorowka-${safeId}">›</span>
+          </div>
+          <div class="sesja-subbody" id="body-sub-zbiorowka-${safeId}">
+            <table class="results-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th class="mono">Kod</th>
+                  <th>Nazwa</th>
+                  <th class="center">Łączna ilość</th>
+                  <th class="center">Waga jedn.</th>
+                  <th class="right">Waga łączna</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="5" class="right">Łączna waga:</td>
+                  <td class="right">${s.totalKg.toFixed(2)} kg</td>
+                </tr>
+              </tfoot>
+            </table>
+            <div class="sesja-actions">
+              <button class="btn-secondary" onclick="drukujHistoriaSesje('${safeId}')">🖨 Drukuj zbiorówkę</button>
+              <button class="btn-danger" onclick="usunSesje('${safeId}')">🗑 Usuń</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>`;
@@ -489,6 +566,14 @@ export function renderHistorie(appState) {
 export function toggleSesja(id) {
   document.getElementById("body-" + id).classList.toggle("open");
   document.getElementById("tog-" + id).classList.toggle("open");
+}
+
+export function togglePodsekcja(id) {
+  const body = document.getElementById("body-sub-" + id);
+  const tog = document.getElementById("tog-sub-" + id);
+  if (!body || !tog) return;
+  body.classList.toggle("open");
+  tog.classList.toggle("open");
 }
 
 export async function usunSesje(appState, id) {

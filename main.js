@@ -27,6 +27,7 @@ import {
   resetSesji,
   toggleNorma,
   toggleSesja,
+  togglePodsekcja,
   usunNorme,
   usunSesje,
   usunZBazy,
@@ -48,6 +49,7 @@ window.kopijNormeZSesji = (id) => kopijNormeZSesji(appState, id);
 window.usunNorme = (id) => usunNorme(appState, id);
 window.toggleNorma = toggleNorma;
 window.toggleSesja = toggleSesja;
+window.togglePodsekcja = togglePodsekcja;
 window.usunSesje = (id) => usunSesje(appState, id);
 window.drukujHistoriaSesje = (id) => drukujHistoriaSesje(appState, id);
 window.usunZBazy = (key) => usunZBazy(appState, key);

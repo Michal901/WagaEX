@@ -34,31 +34,29 @@ export function parsujLinie(line) {
   if (isNaN(waga) || waga <= 0) return { blad: "Waga ≤ 0", linia: t };
   if (isNaN(ilosc) || ilosc <= 0) return { blad: "Ilość ≤ 0", linia: t };
 
-  // Kod produktu: ostatnie słowo pasujące do schematu [A-Za-z]?\d+[A-Za-z]?
-  // (opcjonalna litera + cyfry + opcjonalna litera)
+  // Kod produktu: ostatnie słowo pasujące do schematu [A-Za-z]?\d+[A-Za-z]? lub cztery cyfry i więcej
   const przedWaga = reszta.slice(0, wm.index).trim();
   let kod = "";
+  let nazwa = przedWaga;
   
   // Dziel na słowa i szukaj od końca pasującego do schematu kodu
   const slowa = przedWaga.split(/\s+/);
   for (let i = slowa.length - 1; i >= 0; i--) {
-    // Usuń znaki interpunkcyjne na końcu
-    const slowo = slowa[i].replace(/[,.;:!?]+$/, "");
-    
-    // Ignoruj jednostki fizyczne (liczba + litera): 1500W, 380mm, 2kg, etc.
-    if (/^\d+\.?\d*[A-Z]?$/.test(slowo)) continue;
-    
-    // Szukaj kodów: zawierające litery i cyfry (bardziej reliable)
-    // oraz zaczające się na literę (bardziej kodopodobne)
-    if (/^[A-Z]/i.test(slowo) && /\d/.test(slowo)) {
+    const slowo = slowa[i].replace(/[,.!?:;]+$/, "").trim();
+    if (!slowo) continue;
+
+    // Ignoruj jednostki fizyczne i typowe części nazwy zawierające liczbę+jednostkę
+    if (/^\d+(?:[.,]\d+)?(?:kg|g|l|ml|mm|cm|m|szt|szt\.|pcs|x|el|w|v|a|mah)$/i.test(slowo)) continue;
+
+    // Rozpoznaj kody alfanumeryczne oraz numeryczne kody z co najmniej 4 cyfr
+    const jestKodAlfa = /^[A-Za-z]?\d+[A-Za-z]?$/.test(slowo);
+    const jestKodNumeryczny = /^[0-9]{4,}$/.test(slowo);
+    if (jestKodAlfa || jestKodNumeryczny) {
       kod = slowo;
       break;
     }
   }
 
-  // Nazwa: PEŁNA nazwa (bez usuwania kodu) - wszystko przed wagą
-  const nazwa = przedWaga;
-  
   return { nazwa, kod, waga, ilosc, linia: t };
 }
 

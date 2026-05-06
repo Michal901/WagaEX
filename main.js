@@ -5,7 +5,6 @@
 import {
   aktualizujHint,
   dodajDoSesji,
-  kopijNorme,
   kopijNormeZSesji,
   obliczWage,
   wyczyscFormularz,
@@ -26,8 +25,8 @@ import {
   renderZbiorcza,
   resetSesji,
   toggleNorma,
-  toggleSesja,
   togglePodsekcja,
+  toggleSesja,
   usunNorme,
   usunSesje,
   usunZBazy,

@@ -13,7 +13,10 @@ export class AppState {
     const historiaBackend = await this.storage.loadHistory([]);
 
     const merged = new Map();
-    [...historiaBackend, ...Array.isArray(historiaLocal) ? historiaLocal : []].forEach((s) => {
+    [
+      ...historiaBackend,
+      ...(Array.isArray(historiaLocal) ? historiaLocal : []),
+    ].forEach((s) => {
       merged.set(s.id, s);
     });
 
@@ -22,13 +25,20 @@ export class AppState {
     );
 
     const baza = await this.storage.load("baza", {});
-    this.baza = baza && typeof baza === "object" && !Array.isArray(baza) ? baza : {};
+    this.baza =
+      baza && typeof baza === "object" && !Array.isArray(baza) ? baza : {};
   }
 
   async saveToStorage() {
     await Promise.all([
-      this.storage.save("historia", Array.isArray(this.historia) ? this.historia : []),
-      this.storage.save("baza", this.baza && typeof this.baza === "object" ? this.baza : {}),
+      this.storage.save(
+        "historia",
+        Array.isArray(this.historia) ? this.historia : [],
+      ),
+      this.storage.save(
+        "baza",
+        this.baza && typeof this.baza === "object" ? this.baza : {},
+      ),
     ]);
   }
 

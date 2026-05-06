@@ -661,7 +661,10 @@ export function renderBaze(appState) {
   const rows = entries
     .map((p, i) => {
       const d = new Date(p.ostatnioUzyta).toLocaleString("pl-PL");
-      const safeId = String(p.id || p.nazwa.toLowerCase().trim()).replace(/'/g, "\\'");
+      const safeId = String(p.id || p.nazwa.toLowerCase().trim()).replace(
+        /'/g,
+        "\\'",
+      );
 
       return `
         <tr>

@@ -379,6 +379,12 @@ textarea::placeholder {
   background: rgba(255, 79, 79, 0.2);
 }
 
+.btn-small {
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: 5px;
+}
+
 .btn-ghost-sm {
   background: none;
   color: var(--text3);

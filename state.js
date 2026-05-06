@@ -9,8 +9,17 @@ export class AppState {
   }
 
   async init() {
-    const historia = await this.storage.load("historia", []);
-    this.historia = Array.isArray(historia) ? historia : [];
+    const historiaLocal = await this.storage.load("historia", []);
+    const historiaBackend = await this.storage.loadHistory([]);
+
+    const merged = new Map();
+    [...historiaBackend, ...Array.isArray(historiaLocal) ? historiaLocal : []].forEach((s) => {
+      merged.set(s.id, s);
+    });
+
+    this.historia = Array.from(merged.values()).sort(
+      (a, b) => new Date(a.data) - new Date(b.data),
+    );
 
     const baza = await this.storage.load("baza", {});
     this.baza = baza && typeof baza === "object" && !Array.isArray(baza) ? baza : {};

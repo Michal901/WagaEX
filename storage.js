@@ -113,7 +113,120 @@ export class StorageManager {
   }
 
   // =========================
-  // DELETE (🔥 100% FIXED)
+  // SESSIONS HISTORY BACKEND
+  // =========================
+  async saveSession(sesja) {
+    if (!sesja || !sesja.id) return;
+
+    const sessionRow = {
+      id: sesja.id,
+      nr: sesja.nr,
+      data: toISO(sesja.data),
+      total_kg: Number(sesja.totalKg.toFixed(2)),
+    };
+
+    const { error: sessionError } = await supabase.from("sessions").insert(
+      [sessionRow],
+      { returning: "minimal" },
+    );
+
+    if (sessionError) {
+      console.error("❌ SESSION SAVE ERROR:", sessionError.message);
+      return;
+    }
+
+    const norms = (sesja.normy || []).map((n) => ({
+      id: n.id,
+      session_id: sesja.id,
+      nr: n.nr,
+      label: n.label,
+      total_kg: Number(n.totalKg.toFixed(2)),
+    }));
+
+    const { error: normsError } = await supabase.from("norms").insert(
+      norms,
+      { returning: "minimal" },
+    );
+
+    if (normsError) {
+      console.error("❌ NORMS SAVE ERROR:", normsError.message);
+      await supabase.from("sessions").delete().eq("id", sesja.id);
+      return;
+    }
+
+    const products = (sesja.normy || []).flatMap((n) =>
+      (n.produkty || []).map((p) => ({
+        norm_id: n.id,
+        nazwa: p.nazwa,
+        waga: Number(p.waga),
+        ilosc: Number(p.ilosc),
+        ilosc_x: Number(
+          p.iloscX !== undefined && p.iloscX !== null ? p.iloscX : p.ilosc,
+        ),
+      })),
+    );
+
+    const { error: productsError } = await supabase.from("norm_products").insert(
+      products,
+      { returning: "minimal" },
+    );
+
+    if (productsError) {
+      console.error("❌ NORM PRODUCTS SAVE ERROR:", productsError.message);
+      await supabase.from("sessions").delete().eq("id", sesja.id);
+      return;
+    }
+  }
+
+  async loadHistory(defaultValue = []) {
+    const { data, error } = await supabase
+      .from("sessions")
+      .select(
+        `id,nr,data,total_kg,norms(id,nr,label,total_kg,norm_products(nazwa,waga,ilosc,ilosc_x))`,
+      )
+      .order("data", { ascending: true });
+
+    if (error) {
+      console.error("❌ LOAD HISTORY ERROR:", error.message);
+      return defaultValue;
+    }
+
+    if (!data?.length) return defaultValue;
+
+    return data.map((row) => ({
+      id: row.id,
+      nr: row.nr,
+      data: toISO(row.data),
+      totalKg: toNumber(row.total_kg),
+      normy: (row.norms || []).map((n) => ({
+        id: n.id,
+        nr: n.nr,
+        label: n.label,
+        totalKg: toNumber(n.total_kg),
+        produkty: (n.norm_products || []).map((p) => ({
+          nazwa: p.nazwa,
+          waga: toNumber(p.waga),
+          ilosc: toNumber(p.ilosc),
+          iloscX: toNumber(p.ilosc_x),
+        })),
+      })),
+    }));
+  }
+
+  // =========================  // DELETE SESSION
+  // =========================
+  async deleteSession(id) {
+    const { error } = await supabase
+      .from("sessions")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.error("❌ DELETE SESSION ERROR:", error.message);
+    }
+  }
+
+  // =========================  // DELETE (🔥 100% FIXED)
   // =========================
   async deleteFromBaza(id) {
     const cleanId = normId(id);

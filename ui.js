@@ -360,6 +360,7 @@ export async function zapiszZbiorowkeDoHistorii(appState) {
   };
 
   await appState.addToHistoria(sesja);
+  await appState.storage.saveSession(sesja);
   await appState.updateBaza(
     appState.biezacaSesja.flatMap((n) =>
       n.produkty.map((p) => ({ ...p, ilosc: p.iloscX })),
@@ -399,6 +400,7 @@ export async function zapiszSesje(appState) {
   };
 
   await appState.addToHistoria(sesja);
+  await appState.storage.saveSession(sesja);
 
   // Aktualizuj bazę produktów
   await appState.updateBaza(
@@ -506,6 +508,7 @@ export function renderHistorie(appState) {
         </div>
         <div style="display:flex;align-items:center;gap:14px">
           <span class="sesja-kg">${s.totalKg.toFixed(2)} kg</span>
+          <button class="btn-danger btn-small" onclick="event.stopPropagation(); usunSesje('${safeId}')" title="Usuń sesję">🗑</button>
           <span class="sesja-toggle" id="tog-${safeId}">›</span>
         </div>
       </div>
@@ -578,6 +581,7 @@ export function togglePodsekcja(id) {
 
 export async function usunSesje(appState, id) {
   appState.historia = appState.historia.filter((s) => s.id !== id);
+  await appState.storage.deleteSession(id);
   await appState.saveToStorage();
   aktualizujBadge(appState);
   renderHistorie(appState);

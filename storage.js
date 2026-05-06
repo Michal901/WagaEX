@@ -116,6 +116,7 @@ export class StorageManager {
   // SESSIONS HISTORY BACKEND
   // =========================
   async saveSession(sesja) {
+    console.log("💾 Saving session to Supabase:", sesja);
     if (!sesja || !sesja.id) return;
 
     const sessionRow = {
@@ -125,15 +126,15 @@ export class StorageManager {
       total_kg: Number(sesja.totalKg.toFixed(2)),
     };
 
-    const { error: sessionError } = await supabase.from("sessions").insert(
-      [sessionRow],
-      { returning: "minimal" },
-    );
+    const { error: sessionError } = await supabase
+      .from("sessions")
+      .insert([sessionRow], { returning: "minimal" });
 
     if (sessionError) {
       console.error("❌ SESSION SAVE ERROR:", sessionError.message);
       return;
     }
+    console.log("✅ Session saved:", sessionRow);
 
     const norms = (sesja.normy || []).map((n) => ({
       id: n.id,
@@ -143,16 +144,16 @@ export class StorageManager {
       total_kg: Number(n.totalKg.toFixed(2)),
     }));
 
-    const { error: normsError } = await supabase.from("norms").insert(
-      norms,
-      { returning: "minimal" },
-    );
+    const { error: normsError } = await supabase
+      .from("norms")
+      .insert(norms, { returning: "minimal" });
 
     if (normsError) {
       console.error("❌ NORMS SAVE ERROR:", normsError.message);
       await supabase.from("sessions").delete().eq("id", sesja.id);
       return;
     }
+    console.log("✅ Norms saved:", norms);
 
     const products = (sesja.normy || []).flatMap((n) =>
       (n.produkty || []).map((p) => ({
@@ -166,16 +167,16 @@ export class StorageManager {
       })),
     );
 
-    const { error: productsError } = await supabase.from("norm_products").insert(
-      products,
-      { returning: "minimal" },
-    );
+    const { error: productsError } = await supabase
+      .from("norm_products")
+      .insert(products, { returning: "minimal" });
 
     if (productsError) {
       console.error("❌ NORM PRODUCTS SAVE ERROR:", productsError.message);
       await supabase.from("sessions").delete().eq("id", sesja.id);
       return;
     }
+    console.log("✅ Products saved:", products);
   }
 
   async loadHistory(defaultValue = []) {
@@ -216,10 +217,7 @@ export class StorageManager {
   // =========================  // DELETE SESSION
   // =========================
   async deleteSession(id) {
-    const { error } = await supabase
-      .from("sessions")
-      .delete()
-      .eq("id", id);
+    const { error } = await supabase.from("sessions").delete().eq("id", id);
 
     if (error) {
       console.error("❌ DELETE SESSION ERROR:", error.message);

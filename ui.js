@@ -613,29 +613,63 @@ export function drukujHistoriaSesje(appState, id) {
     .map((n) => `${n.label}: ${n.totalKg.toFixed(2)} kg`)
     .join(" | ");
 
+  const S = {
+    wrap: "font-family:Arial,sans-serif;font-size:12px;color:#000;",
+    title: "font-size:14px;font-weight:bold;margin-bottom:10px;",
+    table: "width:100%;border-collapse:collapse;font-size:12px;margin-top:10px;",
+    thCheck: "border:1px solid #999;padding:6px 8px;text-align:center;width:24px;font-weight:bold;background:#f0f0f0;",
+    th: "border:1px solid #999;padding:6px 8px;text-align:left;font-weight:bold;background:#f0f0f0;",
+    thC: "border:1px solid #999;padding:6px 8px;text-align:center;font-weight:bold;background:#f0f0f0;",
+    thR: "border:1px solid #999;padding:6px 8px;text-align:right;font-weight:bold;background:#f0f0f0;",
+    tdCheck: "border:1px solid #999;padding:6px 8px;text-align:center;width:24px;",
+    td: "border:1px solid #999;padding:6px 8px;text-align:left;",
+    tdC: "border:1px solid #999;padding:6px 8px;text-align:center;",
+    tdR: "border:1px solid #999;padding:6px 8px;text-align:right;font-weight:bold;",
+    tfTd: "border-top:2px solid #333;padding:6px 8px;text-align:right;font-weight:bold;border-left:none;border-right:none;border-bottom:none;",
+    tfTdR: "border-top:2px solid #333;padding:6px 8px;text-align:right;font-weight:bold;",
+  };
+
   const rows = lista
     .map(
       (p, i) => `
     <tr>
-      <td>${i + 1}</td>
-      <td>${esc(p.kod || "—")}</td>
-      <td>${esc(p.nazwa)}</td>
-      <td style="text-align:center">${p.iloscTotal}</td>
-      <td style="text-align:center">${p.waga}</td>
-      <td style="text-align:right">${(p.waga * p.iloscTotal).toFixed(2)}</td>
+      <td style="${S.tdCheck}"><input type="checkbox" style="width:12px;height:12px;margin:0;"/></td>
+      <td style="${S.td}">${i + 1}</td>
+      <td style="${S.td}">${esc(p.kod || "—")}</td>
+      <td style="${S.td}">${esc(p.nazwa)}</td>
+      <td style="${S.tdC}">${p.iloscTotal}</td>
+      <td style="${S.tdC}">${p.waga}</td>
+      <td style="${S.tdR}">${(p.waga * p.iloscTotal).toFixed(2)}</td>
     </tr>`,
     )
     .join("");
 
   document.getElementById("printArea").innerHTML = `
-    <h2>Zbiorówka – Sesja #${s.nr} (${s.normy.length} norm)</h2>
-    <div class="print-date">Data: ${d}</div>
-    <div class="print-normy">${normaInfo}</div>
-    <table>
-      <thead><tr><th>#</th><th>Kod</th><th>Nazwa produktu</th><th style="text-align:center">Łączna ilość</th><th style="text-align:center">Waga jedn. (kg)</th><th style="text-align:right">Waga łączna (kg)</th></tr></thead>
-      <tbody>${rows}</tbody>
-      <tfoot><tr><td colspan="5" style="text-align:right">Łączna waga:</td><td style="text-align:right">${totalKg.toFixed(2)} kg</td></tr></tfoot>
-    </table>`;
+    <div style="${S.wrap}">
+      <div style="${S.title}">Zbiorówka – Sesja #${s.nr} (${s.normy.length} norm)</div>
+      <div style="margin-bottom:4px;font-size:11px;">Data: ${d}</div>
+      <div style="margin-bottom:8px;font-size:11px;">Normy: ${normaInfo}</div>
+      <table style="${S.table}">
+        <thead>
+          <tr>
+            <th style="${S.thCheck}">✓</th>
+            <th style="${S.th}">#</th>
+            <th style="${S.th}">Kod</th>
+            <th style="${S.th}">Nazwa produktu</th>
+            <th style="${S.thC}">Łączna ilość</th>
+            <th style="${S.thC}">Waga jedn. (kg)</th>
+            <th style="${S.thR}">Waga łączna (kg)</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+        <tfoot>
+          <tr>
+            <td colspan="6" style="${S.tfTd}">Łączna waga:</td>
+            <td style="${S.tfTdR}">${totalKg.toFixed(2)} kg</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>`;
   window.print();
 }
 

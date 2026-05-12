@@ -209,6 +209,21 @@ async function init() {
     .addEventListener("click", () => dodajProduktReczny(appState));
 
   // ==========================
+  // THEME TOGGLE
+  // ==========================
+  const savedTheme = localStorage.getItem("wagaex_theme") || "dark";
+  document.documentElement.setAttribute("data-theme", savedTheme);
+  document.getElementById("btnTheme").textContent = savedTheme === "light" ? "🌙" : "☀️";
+
+  document.getElementById("btnTheme").addEventListener("click", () => {
+    const current = document.documentElement.getAttribute("data-theme");
+    const next = current === "light" ? "dark" : "light";
+    document.documentElement.setAttribute("data-theme", next);
+    document.getElementById("btnTheme").textContent = next === "light" ? "🌙" : "☀️";
+    localStorage.setItem("wagaex_theme", next);
+  });
+
+  // ==========================
   // FIRST RENDER (🔥 IMPORTANT)
   // ==========================
   renderBaze(appState);

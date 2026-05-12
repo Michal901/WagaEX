@@ -228,6 +228,25 @@ async function init() {
   });
 
   // ==========================
+  // SCROLL TO TOP (Baza)
+  // ==========================
+  const mainEl = document.querySelector(".main");
+  const scrollBtn = document.getElementById("btnScrollTop");
+
+  mainEl.addEventListener("scroll", () => {
+    const bazaActive = document.getElementById("tab-baza").classList.contains("active");
+    if (bazaActive && mainEl.scrollTop > 200) {
+      scrollBtn.classList.add("visible");
+    } else {
+      scrollBtn.classList.remove("visible");
+    }
+  });
+
+  scrollBtn.addEventListener("click", () => {
+    mainEl.scrollTo({ top: 0, behavior: "smooth" });
+  });
+
+  // ==========================
   // FIRST RENDER (🔥 IMPORTANT)
   // ==========================
   renderBaze(appState);

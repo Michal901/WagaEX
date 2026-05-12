@@ -972,6 +972,38 @@ textarea::placeholder {
   margin-bottom: 12px;
 }
 
+/* ===== SCROLL TO TOP ===== */
+.scroll-top-btn {
+  position: fixed;
+  bottom: 32px;
+  right: 5px;
+  width: 36px;
+  height: 36px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text3);
+  border-radius: 50%;
+  font-size: 16px;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.25s;
+  z-index: 998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.scroll-top-btn.visible {
+  opacity: 0.7;
+  pointer-events: auto;
+}
+.scroll-top-btn:hover {
+  opacity: 1;
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-2px);
+}
+
 /* ===== TOAST ===== */
 .toast {
   position: fixed;

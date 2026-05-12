@@ -16,6 +16,7 @@ import { StorageManager } from "./storage.js";
 
 import {
   aktualizujBadge,
+  dodajProduktReczny,
   drukujHistoriaSesje,
   drukujNorme,
   drukujNormeZSesji,
@@ -164,11 +165,15 @@ async function init() {
     .addEventListener("click", () => wyczyscHistorie(appState));
 
   // ==========================
-  // BAZA SEARCH
+  // BAZA SEARCH + ADD
   // ==========================
   document
     .getElementById("bazaSzukaj")
     .addEventListener("input", () => renderBaze(appState));
+
+  document
+    .getElementById("btnDodajProdukt")
+    .addEventListener("click", () => dodajProduktReczny(appState));
 
   // ==========================
   // FIRST RENDER (🔥 IMPORTANT)

@@ -711,6 +711,66 @@ export async function usunZBazy(appState, key) {
   toast("Produkt usunięty z bazy");
 }
 
+export async function dodajProduktReczny(appState) {
+  const nazwaEl = document.getElementById("bazaDodajNazwa");
+  const kodEl = document.getElementById("bazaDodajKod");
+  const wagaEl = document.getElementById("bazaDodajWaga");
+
+  const nazwa = (nazwaEl.value || "").trim();
+  const kod = (kodEl.value || "").trim();
+  const wagaStr = (wagaEl.value || "").trim().replace(",", ".");
+
+  // Walidacja
+  if (!nazwa) {
+    toast("Podaj nazwę produktu", true);
+    nazwaEl.focus();
+    return;
+  }
+  if (nazwa.length > 100) {
+    toast("Nazwa zbyt długa (max 100 znaków)", true);
+    nazwaEl.focus();
+    return;
+  }
+
+  if (!wagaStr || (wagaStr.match(/\./g) || []).length > 1) {
+    toast("Podaj prawidłową wagę (kg)", true);
+    wagaEl.focus();
+    return;
+  }
+
+  const waga = parseFloat(wagaStr);
+  if (isNaN(waga) || waga < 0.01 || waga > 9999.99) {
+    toast("Waga musi być od 0.01 do 9999.99 kg", true);
+    wagaEl.focus();
+    return;
+  }
+
+  // Zapis
+  const now = new Date().toISOString();
+  const key = nazwa.toLowerCase().trim().replace(/\s+/g, " ");
+
+  appState.baza[key] = {
+    id: key,
+    nazwa,
+    kod,
+    waga: Math.round(waga * 100) / 100,
+    ostatnioUzyta: now,
+    lacznaIlosc: appState.baza[key]?.lacznaIlosc || 0,
+  };
+
+  try {
+    await appState.saveToStorage();
+    nazwaEl.value = "";
+    kodEl.value = "";
+    wagaEl.value = "";
+    aktualizujBadge(appState);
+    renderBaze(appState);
+    toast(`✓ Produkt "${nazwa}" dodany do bazy`);
+  } catch (e) {
+    toast("Błąd zapisu — spróbuj ponownie", true);
+  }
+}
+
 export function aktualizujBadge(appState) {
   const bc = Object.keys(appState.baza).length;
   document.getElementById("badgeNorm").textContent =

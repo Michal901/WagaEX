@@ -134,12 +134,7 @@ export function obliczWage(appState) {
   }
 
   appState.aktualneWyniki = { produkty, mult, data: new Date().toISOString() };
-  const maOstrzezenia = renderWyniki(produkty, mult, appState);
-  
-  // Jeśli są rozbieżności wagi z bazą, nie dodawaj automatycznie — niech user sprawdzi
-  if (!maOstrzezenia) {
-    dodajDoSesji(appState);
-  }
+  renderWyniki(produkty, mult, appState);
 }
 
 export function renderWyniki(produkty, mult, appState) {
@@ -174,8 +169,8 @@ export function renderWyniki(produkty, mult, appState) {
       <td class="mono" style="color:var(--text3);font-size:11px">${i + 1}</td>
       <td class="mono" style="color:var(--accent);font-weight:600">${esc(p.kod || "—")}</td>
       <td>${esc(p.nazwa)}</td>
-      <td class="center mono">${ilCell}</td>
-      <td class="center mono">${p.waga} kg${wagaWarn}</td>
+      <td class="center mono editable-cell" data-field="ilosc" data-index="${i}" title="Kliknij aby edytować">${ilCell}</td>
+      <td class="center mono editable-cell" data-field="waga" data-index="${i}" title="Kliknij aby edytować">${p.waga} kg${wagaWarn}</td>
       <td class="right mono"><strong>${wXN.toFixed(2)} kg</strong></td>
     </tr>`;
   });
@@ -216,6 +211,54 @@ export function renderWyniki(produkty, mult, appState) {
         </tr>
       </tfoot>
     </table>`;
+
+  // Dodaj event listenery do edytowalnych komórek
+  document.querySelectorAll("#wyniki-tabela .editable-cell").forEach((cell) => {
+    cell.addEventListener("click", () => {
+      if (cell.querySelector("input")) return; // już edytowane
+      const field = cell.dataset.field;
+      const idx = parseInt(cell.dataset.index);
+      const p = produkty[idx];
+      const currentVal = field === "ilosc" ? p.ilosc : p.waga;
+      
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "inline-edit";
+      input.value = currentVal;
+      input.style.width = "60px";
+      cell.innerHTML = "";
+      cell.appendChild(input);
+      input.focus();
+      input.select();
+
+      const commit = () => {
+        const raw = input.value.trim().replace(",", ".");
+        const val = parseFloat(raw);
+        if (isNaN(val) || val <= 0) {
+          // Przywróć starą wartość
+          renderWyniki(produkty, mult, appState);
+          return;
+        }
+        if (field === "ilosc") {
+          p.ilosc = val;
+          p.iloscX = val * mult;
+        } else {
+          p.waga = val;
+        }
+        // Przelicz i przerenderuj
+        if (appState && appState.aktualneWyniki) {
+          appState.aktualneWyniki.produkty = produkty;
+        }
+        renderWyniki(produkty, mult, appState);
+      };
+
+      input.addEventListener("blur", commit);
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { e.preventDefault(); commit(); }
+        if (e.key === "Escape") { renderWyniki(produkty, mult, appState); }
+      });
+    });
+  });
 
   const over50 = tN > 50;
   const sumaEl = document.getElementById("wyniki-suma");

@@ -496,6 +496,27 @@ textarea::placeholder {
   text-align: right !important;
 }
 
+/* ===== INLINE EDIT ===== */
+.editable-cell {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.editable-cell:hover {
+  background: var(--accent-dim) !important;
+  border-radius: 4px;
+}
+.inline-edit {
+  background: var(--bg3);
+  border: 1px solid var(--accent);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: 4px 8px;
+  border-radius: 5px;
+  text-align: center;
+  outline: none;
+}
+
 /* ===== ERRORS ===== */
 .bledne-info {
   background: rgba(255, 79, 79, 0.08);

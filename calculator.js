@@ -34,26 +34,58 @@ export function parsujLinie(line) {
   if (isNaN(waga) || waga <= 0) return { blad: "Waga ≤ 0", linia: t };
   if (isNaN(ilosc) || ilosc <= 0) return { blad: "Ilość ≤ 0", linia: t };
 
-  // Kod produktu: ostatnie słowo pasujące do schematu [A-Za-z]?\d+[A-Za-z]? lub cztery cyfry i więcej
+  // Kod produktu: szukaj wzorców kodów w tekście przed wagą
   const przedWaga = reszta.slice(0, wm.index).trim();
   let kod = "";
   let nazwa = przedWaga;
   
-  // Dziel na słowa i szukaj od końca pasującego do schematu kodu
+  // Wzorce kodów produktów:
+  // 1. Litery+cyfry (min 2 znaki alfanum łącznie, np. G66119, EGW102, PH-201, M57692A)
+  // 2. Czysto numeryczne kody z min 4 cyframi (np. 23190, 22621)
+  // Szukamy od początku — kody często są na początku lub na końcu nazwy
+  
   const slowa = przedWaga.split(/\s+/);
-  for (let i = slowa.length - 1; i >= 0; i--) {
+  
+  // Najpierw szukaj kodów alfanumerycznych (litery+cyfry mieszane, opcjonalnie z myślnikiem)
+  // np. G66119, EGW102, PH-201, M57692A, S8800, M8095002
+  for (let i = 0; i < slowa.length; i++) {
     const slowo = slowa[i].replace(/[,.!?:;]+$/, "").trim();
     if (!slowo) continue;
-
-    // Ignoruj jednostki fizyczne i typowe części nazwy zawierające liczbę+jednostkę
-    if (/^\d+(?:[.,]\d+)?(?:kg|g|l|ml|mm|cm|m|szt|szt\.|pcs|x|el|w|v|a|mah)$/i.test(slowo)) continue;
-
-    // Rozpoznaj kody alfanumeryczne oraz numeryczne kody z co najmniej 4 cyfr
-    const jestKodAlfa = /^[A-Za-z]?\d+[A-Za-z]?$/.test(slowo);
-    const jestKodNumeryczny = /^[0-9]{4,}$/.test(slowo);
-    if (jestKodAlfa || jestKodNumeryczny) {
+    
+    // Ignoruj jednostki fizyczne i wymiary
+    if (/^\d+(?:[.,]\d+)?(?:kg|g|l|ml|mm|cm|m|szt|pcs|bar|ele)$/i.test(slowo)) continue;
+    if (/^\d+["']?$/i.test(slowo) && slowo.length <= 3) continue; // krótkie liczby jak wymiary
+    
+    // Kod alfanumeryczny: zaczyna się od liter, potem cyfry (opcjonalnie litera na końcu)
+    // np. G66119, EGW102, PH-201, M57692A, S8800
+    if (/^[A-Za-z]{1,4}[-]?\d{2,}[A-Za-z]?$/.test(slowo)) {
       kod = slowo;
       break;
+    }
+    
+    // Kod z myślnikiem: litery-cyfry lub cyfry-litery
+    // np. PH-201
+    if (/^[A-Za-z]{1,5}-\d{2,}[A-Za-z]?$/.test(slowo)) {
+      kod = slowo;
+      break;
+    }
+  }
+  
+  // Jeśli nie znaleziono kodu alfanumerycznego, szukaj czysto numerycznego (min 4 cyfry)
+  // Szukaj od końca — numeryczne kody są zwykle na końcu nazwy (np. "Trizand 23190")
+  if (!kod) {
+    for (let i = slowa.length - 1; i >= 0; i--) {
+      const slowo = slowa[i].replace(/[,.!?:;]+$/, "").trim();
+      if (!slowo) continue;
+      
+      // Ignoruj jednostki
+      if (/^\d+(?:[.,]\d+)?(?:kg|g|l|ml|mm|cm|m|szt|pcs|bar|ele)$/i.test(slowo)) continue;
+      
+      // Czysto numeryczny kod: min 4 cyfry
+      if (/^\d{4,}$/.test(slowo)) {
+        kod = slowo;
+        break;
+      }
     }
   }
 

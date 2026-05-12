@@ -134,14 +134,19 @@ export function obliczWage(appState) {
   }
 
   appState.aktualneWyniki = { produkty, mult, data: new Date().toISOString() };
-  renderWyniki(produkty, mult);
-  dodajDoSesji(appState);
+  const maOstrzezenia = renderWyniki(produkty, mult, appState);
+  
+  // Jeśli są rozbieżności wagi z bazą, nie dodawaj automatycznie — niech user sprawdzi
+  if (!maOstrzezenia) {
+    dodajDoSesji(appState);
+  }
 }
 
-export function renderWyniki(produkty, mult) {
+export function renderWyniki(produkty, mult, appState) {
   let t1 = 0,
     tN = 0,
     rows = "";
+  const ostrzezenia = [];
 
   produkty.forEach((p, i) => {
     const wX1 = p.waga * p.ilosc;
@@ -154,17 +159,44 @@ export function renderWyniki(produkty, mult) {
         ? `<span style="color:var(--text3)">${p.ilosc}×${mult}=</span> <strong>${p.iloscX}</strong>`
         : `<strong>${p.ilosc}</strong>`;
 
-    rows += `<tr>
+    // Walidacja wagi z bazą
+    let wagaWarn = "";
+    if (appState) {
+      const key = p.nazwa.toLowerCase().trim();
+      const bazowy = appState.baza[key];
+      if (bazowy && bazowy.waga !== p.waga) {
+        wagaWarn = ` <span class="waga-warn" title="W bazie: ${bazowy.waga} kg">⚠️ baza: ${bazowy.waga}kg</span>`;
+        ostrzezenia.push({ nazwa: p.nazwa, wklejona: p.waga, wBazie: bazowy.waga });
+      }
+    }
+
+    rows += `<tr${wagaWarn ? ' class="row-warn"' : ""}>
       <td class="mono" style="color:var(--text3);font-size:11px">${i + 1}</td>
       <td class="mono" style="color:var(--accent);font-weight:600">${esc(p.kod || "—")}</td>
       <td>${esc(p.nazwa)}</td>
       <td class="center mono">${ilCell}</td>
-      <td class="center mono">${p.waga} kg</td>
+      <td class="center mono">${p.waga} kg${wagaWarn}</td>
       <td class="right mono"><strong>${wXN.toFixed(2)} kg</strong></td>
     </tr>`;
   });
 
-  document.getElementById("wyniki-tabela").innerHTML = `
+  let warnBlock = "";
+  if (ostrzezenia.length) {
+    const items = ostrzezenia.map((o) => {
+      const safeKey = encodeURIComponent(o.nazwa.toLowerCase().trim());
+      return `<div class="waga-warn-item">• ${esc(o.nazwa)}: wklejono <strong>${o.wklejona} kg</strong>, w bazie <strong>${o.wBazie} kg</strong> <button class="btn-warn-update" onclick="aktualizujWageBazy(decodeURIComponent('${safeKey}'), ${o.wklejona})">Zaktualizuj → ${o.wklejona} kg</button></div>`;
+    }).join("");
+    
+    const allUpdates = encodeURIComponent(JSON.stringify(ostrzezenia.map((o) => ({ key: o.nazwa.toLowerCase().trim(), waga: o.wklejona }))));
+    
+    warnBlock = `<div class="waga-warn-box">
+      <strong>⚠️ Rozbieżności wagi z bazą:</strong>
+      ${items}
+      ${ostrzezenia.length > 1 ? `<div class="waga-warn-actions"><button class="btn-warn-update-all" onclick="aktualizujWszystkieWagi('${allUpdates}')">Zaktualizuj wszystkie wagi w bazie</button></div>` : `<div class="waga-warn-actions"><button class="btn-warn-update-all" onclick="aktualizujWszystkieWagi('${allUpdates}')">Zaktualizuj wagę w bazie</button></div>`}
+    </div>`;
+  }
+
+  document.getElementById("wyniki-tabela").innerHTML = `${warnBlock}
     <table class="results-table">
       <thead>
         <tr>
@@ -194,6 +226,7 @@ export function renderWyniki(produkty, mult) {
       : `Waga normy: <strong>${tN.toFixed(2)} kg</strong>${over50 ? " ⚠️ >50kg" : ""}`;
 
   document.getElementById("wyniki-wrap").style.display = "block";
+  return ostrzezenia.length > 0;
 }
 
 export function dodajDoSesji(appState) {

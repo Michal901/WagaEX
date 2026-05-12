@@ -13,6 +13,7 @@ import {
 
 import { AppState } from "./state.js";
 import { StorageManager } from "./storage.js";
+import { toast } from "./utils.js";
 
 import {
   aktualizujBadge,
@@ -53,6 +54,38 @@ window.togglePodsekcja = togglePodsekcja;
 window.usunSesje = (id) => usunSesje(appState, id);
 window.drukujHistoriaSesje = (id) => drukujHistoriaSesje(appState, id);
 window.usunZBazy = (key) => usunZBazy(appState, key);
+
+// Aktualizacja wagi z ostrzeżeń
+window.aktualizujWageBazy = async (key, nowaWaga) => {
+  if (appState.baza[key]) {
+    appState.baza[key].waga = nowaWaga;
+    appState.baza[key].ostatnioUzyta = new Date().toISOString();
+    await appState.saveToStorage();
+    // Ukryj ostrzeżenia
+    const warnBox = document.querySelector(".waga-warn-box");
+    if (warnBox) warnBox.remove();
+    document.querySelectorAll(".row-warn").forEach((r) => r.classList.remove("row-warn"));
+    document.querySelectorAll(".waga-warn").forEach((s) => s.remove());
+    toast(`✓ Waga zaktualizowana: ${nowaWaga} kg`);
+  }
+};
+
+window.aktualizujWszystkieWagi = async (encodedData) => {
+  const updates = JSON.parse(decodeURIComponent(encodedData));
+  for (const u of updates) {
+    if (appState.baza[u.key]) {
+      appState.baza[u.key].waga = u.waga;
+      appState.baza[u.key].ostatnioUzyta = new Date().toISOString();
+    }
+  }
+  await appState.saveToStorage();
+  // Ukryj ostrzeżenia
+  const warnBox = document.querySelector(".waga-warn-box");
+  if (warnBox) warnBox.remove();
+  document.querySelectorAll(".row-warn").forEach((r) => r.classList.remove("row-warn"));
+  document.querySelectorAll(".waga-warn").forEach((s) => s.remove());
+  toast(`✓ Zaktualizowano wagi ${updates.length} produktów`);
+};
 
 // ==========================
 // INIT APP (🔥 FIX HERE)

@@ -81,6 +81,9 @@ body {
   padding: 24px 20px;
   border-bottom: 1px solid var(--border);
 }
+.hamburger {
+  display: none;
+}
 .logo-icon {
   font-size: 28px;
   color: var(--accent);
@@ -1063,4 +1066,233 @@ textarea::placeholder {
 ::-webkit-scrollbar-thumb {
   background: var(--border);
   border-radius: 4px;
+}
+
+/* ===== RESPONSIVE ===== */
+
+/* Tablet (≤1024px) */
+@media (max-width: 1024px) {
+  :root {
+    --sidebar: 200px;
+  }
+  .hamburger {
+    display: none;
+  }
+  .main {
+    padding: 24px 24px;
+  }
+  .page-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .page-header h1 {
+    font-size: 22px;
+  }
+  .header-controls {
+    align-items: flex-start;
+  }
+  .baza-add-fields {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .baza-add-fields input {
+    width: 100% !important;
+    flex: unset !important;
+  }
+  .search-wrap input {
+    width: 200px;
+  }
+  #bazaSzukaj {
+    margin-right: 0;
+  }
+  #tab-baza .page-header {
+    height: auto;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* Mobile (≤768px) */
+@media (max-width: 768px) {
+  .app {
+    flex-direction: column;
+    height: 100vh;
+  }
+  .sidebar {
+    width: 100%;
+    flex-direction: column;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    height: auto;
+    position: relative;
+    z-index: 100;
+  }
+  .logo {
+    padding: 12px 16px;
+    border-bottom: none;
+    justify-content: space-between;
+  }
+  .hamburger {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    margin-left: auto;
+  }
+  .hamburger span {
+    display: block;
+    width: 22px;
+    height: 2px;
+    background: var(--text2);
+    border-radius: 2px;
+    transition: all 0.25s;
+  }
+  .hamburger.open span:nth-child(1) {
+    transform: rotate(45deg) translate(4px, 4px);
+  }
+  .hamburger.open span:nth-child(2) {
+    opacity: 0;
+  }
+  .hamburger.open span:nth-child(3) {
+    transform: rotate(-45deg) translate(4px, -4px);
+  }
+  .nav {
+    display: none;
+    flex-direction: column;
+    padding: 8px 12px 12px;
+    gap: 4px;
+    border-top: 1px solid var(--border);
+  }
+  .nav.open {
+    display: flex;
+  }
+  .nav-btn {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+  .sidebar-footer {
+    display: none;
+  }
+  .main {
+    padding: 16px;
+    height: calc(100vh - 60px);
+  }
+  .page-header h1 {
+    font-size: 20px;
+  }
+  .page-sub {
+    font-size: 12px;
+  }
+  .results-table {
+    font-size: 11px;
+  }
+  .results-table thead th {
+    padding: 8px 8px;
+    font-size: 9px;
+  }
+  .results-table tbody td {
+    padding: 8px 8px;
+  }
+  .wyniki-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .wyniki-akcje {
+    flex-wrap: wrap;
+  }
+  .suma-box {
+    text-align: center;
+    font-size: 13px;
+    padding: 10px 14px;
+  }
+  .sesja-pasek-header,
+  .sesja-pasek-footer {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  .sesja-meta {
+    gap: 8px;
+  }
+  .search-wrap input {
+    width: 100%;
+  }
+  #tab-baza .page-header {
+    position: relative;
+    height: auto;
+  }
+  #tab-baza {
+    margin-top: 0;
+  }
+  #bazaSzukaj {
+    margin-right: 0;
+  }
+  .input-actions {
+    flex-wrap: wrap;
+  }
+  .multiplier-wrap {
+    align-self: flex-start;
+  }
+  .scroll-top-btn {
+    bottom: 16px;
+    right: 16px;
+  }
+}
+
+/* Small mobile (≤480px) */
+@media (max-width: 480px) {
+  .logo {
+    padding: 10px 12px;
+  }
+  .logo-title {
+    font-size: 15px;
+  }
+  .nav {
+    padding: 6px 8px;
+  }
+  .nav-btn {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+  .badge {
+    font-size: 10px;
+    padding: 1px 5px;
+  }
+  .main {
+    padding: 12px;
+  }
+  .page-header h1 {
+    font-size: 18px;
+  }
+  textarea {
+    min-height: 120px;
+    padding: 14px;
+    font-size: 12px;
+  }
+  .btn-primary,
+  .btn-accent,
+  .btn-secondary,
+  .btn-danger {
+    padding: 8px 14px;
+    font-size: 12px;
+  }
+  .norma-chip {
+    padding: 8px 10px;
+  }
+  .sesja-header {
+    padding: 10px 12px;
+  }
+  .zbiorcza-normy-header {
+    gap: 6px;
+  }
+  .norma-tag {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
 }

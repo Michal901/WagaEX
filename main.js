@@ -95,6 +95,25 @@ async function init() {
   await appState.init();
 
   // ==========================
+  // HAMBURGER MENU
+  // ==========================
+  const hamburger = document.getElementById("btnHamburger");
+  const navMenu = document.getElementById("navMenu");
+
+  hamburger.addEventListener("click", () => {
+    hamburger.classList.toggle("open");
+    navMenu.classList.toggle("open");
+  });
+
+  // Zamknij menu po kliknięciu w zakładkę (mobile)
+  navMenu.querySelectorAll(".nav-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      hamburger.classList.remove("open");
+      navMenu.classList.remove("open");
+    });
+  });
+
+  // ==========================
   // NAVIGATION
   // ==========================
   document.querySelectorAll(".nav-btn").forEach((btn) => {

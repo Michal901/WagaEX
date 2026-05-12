@@ -318,7 +318,10 @@ export async function drukujZbiorcza(appState) {
         )
         .join("");
 
-      const pageTotal = pageItems.reduce((s, p) => s + p.waga * p.iloscTotal, 0);
+      const pageTotal = pageItems.reduce(
+        (s, p) => s + p.waga * p.iloscTotal,
+        0,
+      );
 
       return `
     <div style="page-break-after:always;margin-bottom:20px;">

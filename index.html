@@ -146,7 +146,12 @@
             <h1>Historia sesji</h1>
             <p class="page-sub">Zapisane zamówienia klientów</p>
           </div>
-          <button class="btn-danger" id="btnWyczyscHistorie">🗑 Wyczyść historię</button>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <div class="search-wrap">
+              <input type="text" id="historiaSzukaj" placeholder="🔍 Szukaj w historii..." />
+            </div>
+            <button class="btn-danger" id="btnWyczyscHistorie">🗑 Wyczyść historię</button>
+          </div>
         </div>
         <div id="historia-lista"></div>
       </div>

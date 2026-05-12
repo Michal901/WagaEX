@@ -436,7 +436,38 @@ export function renderHistorie(appState) {
     return;
   }
 
-  el.innerHTML = [...appState.historia]
+  const q = (document.getElementById("historiaSzukaj")?.value || "")
+    .toLowerCase()
+    .trim();
+
+  let filtered = [...appState.historia];
+  if (q) {
+    filtered = filtered.filter((s) => {
+      // Szukaj w dacie
+      const d = new Date(s.data).toLocaleString("pl-PL");
+      if (d.toLowerCase().includes(q)) return true;
+      // Szukaj w numerze sesji
+      if (String(s.nr).includes(q)) return true;
+      // Szukaj w produktach
+      if (s.normy) {
+        for (const n of s.normy) {
+          if (n.label && n.label.toLowerCase().includes(q)) return true;
+          for (const p of n.produkty) {
+            if (p.nazwa && p.nazwa.toLowerCase().includes(q)) return true;
+            if (p.kod && p.kod.toLowerCase().includes(q)) return true;
+          }
+        }
+      }
+      return false;
+    });
+  }
+
+  if (!filtered.length) {
+    el.innerHTML = `<div class="baza-empty"><div class="big">📋</div>${q ? "Brak wyników dla: \"" + q + "\"" : "Brak zapisanych sesji."}</div>`;
+    return;
+  }
+
+  el.innerHTML = filtered
     .reverse()
     .map((s) => {
       const d = new Date(s.data).toLocaleString("pl-PL", {

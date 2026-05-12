@@ -197,6 +197,10 @@ async function init() {
     .getElementById("btnWyczyscHistorie")
     .addEventListener("click", () => wyczyscHistorie(appState));
 
+  document
+    .getElementById("historiaSzukaj")
+    .addEventListener("input", () => renderHistorie(appState));
+
   // ==========================
   // BAZA SEARCH + ADD
   // ==========================

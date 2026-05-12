@@ -295,76 +295,51 @@ export async function drukujZbiorcza(appState) {
       "border-top:2px solid #333;padding:6px 8px;text-align:right;font-weight:bold;",
   };
 
-  const itemsPerPage = 28;
-  const pages = [];
-  for (let i = 0; i < lista.length; i += itemsPerPage) {
-    pages.push(lista.slice(i, i + itemsPerPage));
-  }
-
-  const pagesHTML = pages
-    .map((pageItems, pageNum) => {
-      const pageRows = pageItems
-        .map(
-          (p, i) => `
+  const allRows = lista
+    .map(
+      (p, i) => `
     <tr>
       <td style="${S.tdCheck}"><input type="checkbox" style="width:12px;height:12px;margin:0;border:1px solid #000;"/></td>
-      <td style="${S.td}">${pageNum * itemsPerPage + i + 1}</td>
+      <td style="${S.td}">${i + 1}</td>
       <td style="${S.td}" title="Kod: ${esc(p.kod || "—")}">${esc(p.kod || "—")}</td>
       <td style="${S.td}">${esc(p.nazwa)}</td>
       <td style="${S.tdC}">${p.iloscTotal}</td>
       <td style="${S.tdC}">${p.waga}</td>
       <td style="${S.tdR}">${(p.waga * p.iloscTotal).toFixed(2)}</td>
     </tr>`,
-        )
-        .join("");
-
-      const pageTotal = pageItems.reduce(
-        (s, p) => s + p.waga * p.iloscTotal,
-        0,
-      );
-
-      return `
-    <div style="page-break-after:always;margin-bottom:20px;">
-      <div style="${S.wrap}">
-        <div style="${S.title}">Zbiorówka – ${appState.biezacaSesja.length} norm (Strona ${pageNum + 1})</div>
-        <div style="margin-bottom:8px;font-size:11px;">Data: ${d} | Sesje: ${appState.biezacaSesja.map((n) => n.label).join(", ")}</div>
-        <table style="${S.table}">
-          <thead>
-            <tr>
-              <th style="${S.thCheck}">✓</th>
-              <th style="${S.th}">#</th>
-              <th style="${S.th}">Kod</th>
-              <th style="${S.th}">Nazwa produktu</th>
-              <th style="${S.thC}">Łączna ilość</th>
-              <th style="${S.thC}">Waga jedn. (kg)</th>
-              <th style="${S.thR}">Waga łączna (kg)</th>
-            </tr>
-          </thead>
-          <tbody>${pageRows}</tbody>
-          <tfoot>
-            <tr>
-              <td colspan="6" style="${S.tfTd}">Strona łącznie:</td>
-              <td style="${S.tfTdR}">${pageTotal.toFixed(2)} kg</td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-    </div>`;
-    })
+    )
     .join("");
 
-  const summaryHTML = `
-    <div style="page-break-before:always;margin-top:20px;">
-      <div style="${S.wrap}">
-        <div style="${S.title}">Podsumowanie Zbiorówki</div>
-        <div style="margin-bottom:8px;"><strong>Data:</strong> ${d}</div>
-        <div style="margin-bottom:8px;"><strong>Normy:</strong> ${appState.biezacaSesja.map((n) => `${n.label} (${n.totalKg.toFixed(2)} kg)`).join(" | ")}</div>
-        <div style="margin-bottom:8px;"><strong>Razem produktów:</strong> ${lista.length}</div>
-        <div style="font-size:16px;font-weight:bold;margin-top:16px;"><strong>ŁĄCZNA WAGA ZBIORÓWKI: ${totalKg.toFixed(2)} kg</strong></div>
+  document.getElementById("printArea").innerHTML = `
+    <div style="${S.wrap}">
+      <div style="${S.title}">Zbiorówka – ${appState.biezacaSesja.length} norm</div>
+      <div style="margin-bottom:8px;font-size:11px;">Data: ${d} | Sesje: ${appState.biezacaSesja.map((n) => n.label).join(", ")}</div>
+      <table style="${S.table}">
+        <thead>
+          <tr>
+            <th style="${S.thCheck}">✓</th>
+            <th style="${S.th}">#</th>
+            <th style="${S.th}">Kod</th>
+            <th style="${S.th}">Nazwa produktu</th>
+            <th style="${S.thC}">Łączna ilość</th>
+            <th style="${S.thC}">Waga jedn. (kg)</th>
+            <th style="${S.thR}">Waga łączna (kg)</th>
+          </tr>
+        </thead>
+        <tbody>${allRows}</tbody>
+        <tfoot>
+          <tr>
+            <td colspan="6" style="${S.tfTd}">Łączna waga:</td>
+            <td style="${S.tfTdR}">${totalKg.toFixed(2)} kg</td>
+          </tr>
+        </tfoot>
+      </table>
+      <div style="margin-top:12px;font-size:11px;">
+        <strong>Normy:</strong> ${appState.biezacaSesja.map((n) => `${n.label} (${n.totalKg.toFixed(2)} kg)`).join(" | ")} |
+        <strong>Razem produktów:</strong> ${lista.length} |
+        <strong>ŁĄCZNA WAGA: ${totalKg.toFixed(2)} kg</strong>
       </div>
     </div>`;
-
-  document.getElementById("printArea").innerHTML = pagesHTML + summaryHTML;
   window.print();
 }
 
@@ -691,9 +666,8 @@ export function renderBaze(appState) {
   const rows = entries
     .map((p, i) => {
       const d = new Date(p.ostatnioUzyta).toLocaleString("pl-PL");
-      const safeId = String(p.id || p.nazwa.toLowerCase().trim()).replace(
-        /'/g,
-        "\\'",
+      const safeId = encodeURIComponent(
+        String(p.id || p.nazwa.toLowerCase().trim()),
       );
 
       return `
@@ -704,7 +678,7 @@ export function renderBaze(appState) {
           <td class="center">${p.waga} kg</td>
           <td class="center">${d}</td>
           <td class="center">
-            <button class="btn-ghost-sm" onclick="usunZBazy('${safeId}')">
+            <button class="btn-ghost-sm" onclick="usunZBazy(decodeURIComponent('${safeId}'))">
               🗑
             </button>
           </td>

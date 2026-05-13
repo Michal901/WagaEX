@@ -149,5 +149,5 @@ Rozpoznawane wzorce kodów:
 - Numeryczne (min 4 cyfry): 23190, 22621
 
 ## Autor
-Michał Momot
+Michał Momot <br>
 Projekt WagaEX — narzędzie do zarządzania wagą zamówień eksportowych.

@@ -114,6 +114,58 @@ async function init() {
   });
 
   // ==========================
+  // LOGO SPARKS ANIMATION (canvas)
+  // ==========================
+  const logoCanvas = document.getElementById("logoSparksCanvas");
+  if (logoCanvas) {
+    const ctx = logoCanvas.getContext("2d");
+    let W, H;
+    const sparks = [];
+
+    function resizeLogoCanvas() {
+      W = logoCanvas.width = logoCanvas.offsetWidth;
+      H = logoCanvas.height = logoCanvas.offsetHeight;
+    }
+    resizeLogoCanvas();
+    window.addEventListener("resize", resizeLogoCanvas);
+
+    function LogoSpark() {
+      this.reset = function () {
+        this.x = Math.random() * W;
+        this.y = Math.random() * H;
+        this.vx = (Math.random() - 0.5) * 0.4;
+        this.vy = Math.random() * 0.8 + 0.2;
+        this.life = 1;
+        this.decay = Math.random() * 0.012 + 0.005;
+        this.size = Math.random() * 1.8 + 0.4;
+      };
+      this.reset();
+      this.life = Math.random();
+    }
+
+    for (let i = 0; i < 30; i++) sparks.push(new LogoSpark());
+
+    function animateLogoSparks() {
+      ctx.clearRect(0, 0, W, H);
+      const accentColor = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#00d4a0";
+      sparks.forEach(function (p) {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= p.decay;
+        if (p.life <= 0 || p.y > H) p.reset();
+        ctx.globalAlpha = p.life * 0.4;
+        ctx.fillStyle = accentColor;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+      requestAnimationFrame(animateLogoSparks);
+    }
+    animateLogoSparks();
+  }
+
+  // ==========================
   // NAVIGATION
   // ==========================
   document.querySelectorAll(".nav-btn").forEach((btn) => {

@@ -551,6 +551,9 @@ export function renderHistorie(appState) {
                 <tbody>${normsRows}</tbody>
                 <tfoot><tr><td colspan="5" class="right">Łączna waga:</td><td class="right">${n.totalKg.toFixed(2)} kg</td></tr></tfoot>
               </table>
+              <div class="norma-actions">
+                <button class="btn-secondary" onclick="kopijHistoriaNorme('${safeId}','${n.id}')">${ICON.copy} Kopiuj normę</button>
+              </div>
             </div>
           </div>`;
         })
@@ -627,6 +630,7 @@ export function renderHistorie(appState) {
               </tfoot>
             </table>
             <div class="sesja-actions">
+              <button class="btn-secondary" onclick="kopijHistoriaSesje('${safeId}')">${ICON.copy} Kopiuj zbiorówkę</button>
               <button class="btn-secondary" onclick="drukujHistoriaSesje('${safeId}')">${ICON.print} Drukuj zbiorówkę</button>
               <button class="btn-danger" onclick="usunSesje('${safeId}')">${ICON.trash} Usuń</button>
             </div>
@@ -667,6 +671,62 @@ export async function wyczyscHistorie(appState) {
   aktualizujBadge(appState);
   renderHistorie(appState);
   toast("Historia wyczyszczona");
+}
+
+export function kopijHistoriaNorme(appState, sesjaId, normaId) {
+  const s = appState.historia.find((x) => x.id === sesjaId);
+  if (!s || !s.normy) return;
+
+  const norma = s.normy.find((n) => n.id === normaId);
+  if (!norma) return;
+
+  const lines = norma.produkty.map((p) => {
+    const iloscFormatted = Number.isInteger(p.ilosc)
+      ? p.ilosc
+      : p.ilosc.toFixed(2).replace(/\.?0+$/, '');
+    return `${p.nazwa} ${p.waga}kg\t${iloscFormatted}`;
+  });
+
+  const tekst = lines.join('\n');
+
+  navigator.clipboard.writeText(tekst).then(() => {
+    toast("✓ Norma skopiowana do schowka");
+  }).catch(() => {
+    const textarea = document.createElement('textarea');
+    textarea.value = tekst;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+    toast("✓ Norma skopiowana do schowka");
+  });
+}
+
+export function kopijHistoriaSesje(appState, id) {
+  const s = appState.historia.find((x) => x.id === id);
+  if (!s || !s.normy) return;
+
+  const lista = agregujProdukty(s.normy);
+  const lines = lista.map((p) => {
+    const iloscFormatted = Number.isInteger(p.iloscTotal)
+      ? p.iloscTotal
+      : p.iloscTotal.toFixed(2).replace(/\.?0+$/, '');
+    return `${p.nazwa} ${p.waga}kg\t${iloscFormatted}`;
+  });
+
+  const tekst = lines.join('\n');
+
+  navigator.clipboard.writeText(tekst).then(() => {
+    toast("✓ Zbiorówka skopiowana do schowka");
+  }).catch(() => {
+    const textarea = document.createElement('textarea');
+    textarea.value = tekst;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+    toast("✓ Zbiorówka skopiowana do schowka");
+  });
 }
 
 export function drukujHistoriaSesje(appState, id) {

@@ -22,6 +22,8 @@ import {
   drukujNorme,
   drukujNormeZSesji,
   drukujZbiorcza,
+  kopijHistoriaNorme,
+  kopijHistoriaSesje,
   renderBaze,
   renderHistorie,
   renderZbiorcza,
@@ -53,6 +55,8 @@ window.toggleSesja = toggleSesja;
 window.togglePodsekcja = togglePodsekcja;
 window.usunSesje = (id) => usunSesje(appState, id);
 window.drukujHistoriaSesje = (id) => drukujHistoriaSesje(appState, id);
+window.kopijHistoriaSesje = (id) => kopijHistoriaSesje(appState, id);
+window.kopijHistoriaNorme = (sesjaId, normaId) => kopijHistoriaNorme(appState, sesjaId, normaId);
 window.usunZBazy = (key) => usunZBazy(appState, key);
 
 // Aktualizacja wagi z ostrzeżeń

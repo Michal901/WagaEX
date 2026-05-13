@@ -95,22 +95,30 @@ async function init() {
   await appState.init();
 
   // ==========================
-  // HAMBURGER MENU
+  // HAMBURGER MENU (slide from left)
   // ==========================
   const hamburger = document.getElementById("btnHamburger");
-  const navMenu = document.getElementById("navMenu");
+  const sidebar = document.querySelector(".sidebar");
+  const sidebarOverlay = document.getElementById("sidebarOverlay");
 
-  hamburger.addEventListener("click", () => {
+  function toggleSidebar() {
     hamburger.classList.toggle("open");
-    navMenu.classList.toggle("open");
-  });
+    sidebar.classList.toggle("open");
+    sidebarOverlay.classList.toggle("open");
+  }
 
-  // Zamknij menu po kliknięciu w zakładkę (mobile)
-  navMenu.querySelectorAll(".nav-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      hamburger.classList.remove("open");
-      navMenu.classList.remove("open");
-    });
+  function closeSidebar() {
+    hamburger.classList.remove("open");
+    sidebar.classList.remove("open");
+    sidebarOverlay.classList.remove("open");
+  }
+
+  hamburger.addEventListener("click", toggleSidebar);
+  sidebarOverlay.addEventListener("click", closeSidebar);
+
+  // Zamknij sidebar po kliknięciu w zakładkę (mobile)
+  document.querySelectorAll(".nav-btn").forEach((btn) => {
+    btn.addEventListener("click", closeSidebar);
   });
 
   // ==========================

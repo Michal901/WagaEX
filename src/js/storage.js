@@ -63,13 +63,22 @@ export class StorageManager {
   // UPSERT (SAVE)
   // =========================
   async saveBaza(baza) {
-    const rows = Object.entries(baza).map(([id, p]) => ({
-      id: normId(id),
-      nazwa: p.nazwa,
-      kod: p.kod || "",
-      waga: toNumber(p.waga),
-      ostatnio_uzyta: toISO(p.ostatnioUzyta),
-    }));
+    const seen = new Set();
+    const rows = [];
+    for (const [id, p] of Object.entries(baza)) {
+      const cleanId = normId(id);
+      if (seen.has(cleanId)) continue;
+      seen.add(cleanId);
+      rows.push({
+        id: cleanId,
+        nazwa: p.nazwa,
+        kod: p.kod || "",
+        waga: toNumber(p.waga),
+        ostatnio_uzyta: toISO(p.ostatnioUzyta),
+      });
+    }
+
+    if (!rows.length) return;
 
     const { error } = await supabase.from("products").upsert(rows);
 

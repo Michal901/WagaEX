@@ -157,6 +157,7 @@ export class StorageManager {
       (n.produkty || []).map((p) => ({
         norm_id: n.id,
         nazwa: p.nazwa,
+        kod: p.kod || "",
         waga: Number(p.waga),
         ilosc: Number(p.ilosc),
         ilosc_x: Number(
@@ -181,7 +182,7 @@ export class StorageManager {
     const { data, error } = await supabase
       .from("sessions")
       .select(
-        `id,nr,data,total_kg,norms(id,nr,label,total_kg,norm_products(nazwa,waga,ilosc,ilosc_x))`,
+        `id,nr,data,total_kg,norms(id,nr,label,total_kg,norm_products(nazwa,kod,waga,ilosc,ilosc_x))`,
       )
       .order("data", { ascending: true });
 
@@ -204,6 +205,7 @@ export class StorageManager {
         totalKg: toNumber(n.total_kg),
         produkty: (n.norm_products || []).map((p) => ({
           nazwa: p.nazwa,
+          kod: p.kod || "",
           waga: toNumber(p.waga),
           ilosc: toNumber(p.ilosc),
           iloscX: toNumber(p.ilosc_x),

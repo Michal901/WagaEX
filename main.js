@@ -288,13 +288,12 @@ async function init() {
   // ==========================
   const savedTheme = localStorage.getItem("wagaex_theme") || "dark";
   document.documentElement.setAttribute("data-theme", savedTheme);
-  document.getElementById("btnTheme").textContent = savedTheme === "light" ? "🌙" : "☀️";
+  const themeCheckbox = document.getElementById("btnTheme");
+  themeCheckbox.checked = savedTheme === "dark";
 
-  document.getElementById("btnTheme").addEventListener("click", () => {
-    const current = document.documentElement.getAttribute("data-theme");
-    const next = current === "light" ? "dark" : "light";
+  themeCheckbox.addEventListener("change", () => {
+    const next = themeCheckbox.checked ? "dark" : "light";
     document.documentElement.setAttribute("data-theme", next);
-    document.getElementById("btnTheme").textContent = next === "light" ? "🌙" : "☀️";
     localStorage.setItem("wagaex_theme", next);
   });
 

@@ -436,6 +436,33 @@ export function renderHistorie(appState) {
     return;
   }
 
+  // Uzupełnij brakujące kody produktów z bazy lub wyciągnij z nazwy
+  const getKod = (p) => {
+    if (p.kod) return p.kod;
+    // Szukaj w bazie produktów
+    const key = (p.nazwa || "").toLowerCase().trim();
+    const bazaEntry = appState.baza[key];
+    if (bazaEntry && bazaEntry.kod) return bazaEntry.kod;
+    // Wyciągnij kod z nazwy (ten sam algorytm co w parsujLinie)
+    const nazwa = p.nazwa || "";
+    const slowa = nazwa.split(/\s+/);
+    for (let i = 0; i < slowa.length; i++) {
+      const slowo = slowa[i].replace(/[,.!?:;]+$/, "").trim();
+      if (!slowo) continue;
+      if (/^\d+(?:[.,]\d+)?(?:kg|g|l|ml|mm|cm|m|szt|pcs|bar|ele)$/i.test(slowo)) continue;
+      if (/^\d+["']?$/i.test(slowo) && slowo.length <= 3) continue;
+      if (/^[A-Za-z]{1,4}[-]?\d{2,}[A-Za-z]?$/.test(slowo)) return slowo;
+      if (/^[A-Za-z]{1,5}-\d{2,}[A-Za-z]?$/.test(slowo)) return slowo;
+    }
+    for (let i = slowa.length - 1; i >= 0; i--) {
+      const slowo = slowa[i].replace(/[,.!?:;]+$/, "").trim();
+      if (!slowo) continue;
+      if (/^\d+(?:[.,]\d+)?(?:kg|g|l|ml|mm|cm|m|szt|pcs|bar|ele)$/i.test(slowo)) continue;
+      if (/^\d{4,}$/.test(slowo)) return slowo;
+    }
+    return "";
+  };
+
   const q = (document.getElementById("historiaSzukaj")?.value || "")
     .toLowerCase()
     .trim();
@@ -454,7 +481,8 @@ export function renderHistorie(appState) {
           if (n.label && n.label.toLowerCase().includes(q)) return true;
           for (const p of n.produkty) {
             if (p.nazwa && p.nazwa.toLowerCase().includes(q)) return true;
-            if (p.kod && p.kod.toLowerCase().includes(q)) return true;
+            const kod = getKod(p);
+            if (kod && kod.toLowerCase().includes(q)) return true;
           }
         }
       }
@@ -488,7 +516,7 @@ export function renderHistorie(appState) {
               (p, i) => `
       <tr>
         <td class="mono" style="color:var(--text3);font-size:11px">${i + 1}</td>
-        <td class="mono" style="color:var(--accent);font-weight:600">${esc(p.kod || "—")}</td>
+        <td class="mono" style="color:var(--accent);font-weight:600">${esc(getKod(p) || "—")}</td>
         <td>${esc(p.nazwa)}</td>
         <td class="center mono">${p.ilosc}</td>
         <td class="center mono">${p.waga} kg</td>
@@ -526,7 +554,7 @@ export function renderHistorie(appState) {
           (p, i) => `
       <tr>
         <td class="mono" style="color:var(--text3);font-size:11px">${i + 1}</td>
-        <td class="mono" style="color:var(--accent);font-weight:600">${esc(p.kod || "—")}</td>
+        <td class="mono" style="color:var(--accent);font-weight:600">${esc(getKod(p) || "—")}</td>
         <td>${esc(p.nazwa)}</td>
         <td class="center mono">${Number.isInteger(p.iloscTotal) ? p.iloscTotal : p.iloscTotal.toFixed(2)}</td>
         <td class="center mono">${p.waga} kg</td>

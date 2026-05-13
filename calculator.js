@@ -419,14 +419,12 @@ export function kopijNormeZSesji(appState, id) {
     return;
   }
 
-  // Generuj format: nazwa kod waga kg ilość
+  // Generuj format: nazwa waga kg ilość (kod jest już w nazwie)
   const lines = norma.produkty.map((p) => {
     const iloscFormatted = Number.isInteger(p.ilosc)
       ? p.ilosc
       : p.ilosc.toFixed(2).replace(/\.?0+$/, '');
-    // Jeśli jest kod, umieść go na końcu nazwy
-    const nazwaZKodem = p.kod ? `${p.nazwa} ${p.kod}` : p.nazwa;
-    return `${nazwaZKodem} ${p.waga}kg	${iloscFormatted}`;
+    return `${p.nazwa} ${p.waga}kg	${iloscFormatted}`;
   });
   
   const tekst = lines.join('\n');

@@ -1,6 +1,14 @@
 // ===== UI MODULE =====
 import { agregujProdukty, esc, toast } from "./utils.js";
 
+// Lucide SVG icons (inline)
+const ICON = {
+  print: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>',
+  trash: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>',
+  copy: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+  trashSm: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+};
+
 export function renderSesjaChips(appState) {
   const pasek = document.getElementById("sesja-pasek");
   if (!appState.biezacaSesja.length) {
@@ -47,9 +55,9 @@ export function renderSesjaChips(appState) {
           <tfoot><tr><td colspan="5" class="right">Łączna waga:</td><td class="right">${n.totalKg.toFixed(2)} kg</td></tr></tfoot>
         </table>
         <div class="norma-actions">
-          <button class="btn-secondary" onclick="kopijNormeZSesji('${n.id}')">📋 Kopiuj normę</button>
-          <button class="btn-secondary" onclick="drukujNormeZSesji('${n.id}')">🖨 Drukuj normę</button>
-          <button class="btn-danger" onclick="usunNorme('${n.id}')">🗑 Usuń</button>
+          <button class="btn-secondary" onclick="kopijNormeZSesji('${n.id}')">${ICON.copy} Kopiuj normę</button>
+          <button class="btn-secondary" onclick="drukujNormeZSesji('${n.id}')">${ICON.print} Drukuj normę</button>
+          <button class="btn-danger" onclick="usunNorme('${n.id}')">${ICON.trash} Usuń</button>
         </div>
       </div>
     </div>`;
@@ -432,7 +440,7 @@ export function renderHistorie(appState) {
   const el = document.getElementById("historia-lista");
   if (!appState.historia.length) {
     el.innerHTML =
-      '<div class="baza-empty"><div class="big">📋</div>Brak zapisanych sesji.</div>';
+      '<div class="baza-empty"><div class="big"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text3)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>Brak zapisanych sesji.</div>';
     return;
   }
 
@@ -491,7 +499,7 @@ export function renderHistorie(appState) {
   }
 
   if (!filtered.length) {
-    el.innerHTML = `<div class="baza-empty"><div class="big">📋</div>${q ? "Brak wyników dla: \"" + q + "\"" : "Brak zapisanych sesji."}</div>`;
+    el.innerHTML = `<div class="baza-empty"><div class="big"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text3)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>${q ? "Brak wyników dla: \"" + q + "\"" : "Brak zapisanych sesji."}</div>`;
     return;
   }
 
@@ -572,7 +580,7 @@ export function renderHistorie(appState) {
         </div>
         <div style="display:flex;align-items:center;gap:14px">
           <span class="sesja-kg">${s.totalKg.toFixed(2)} kg</span>
-          <button class="btn-danger btn-small" onclick="event.stopPropagation(); usunSesje('${safeId}')" title="Usuń sesję">🗑</button>
+          <button class="btn-danger btn-small" onclick="event.stopPropagation(); usunSesje('${safeId}')" title="Usuń sesję">${ICON.trashSm}</button>
           <span class="sesja-toggle" id="tog-${safeId}">›</span>
         </div>
       </div>
@@ -619,8 +627,8 @@ export function renderHistorie(appState) {
               </tfoot>
             </table>
             <div class="sesja-actions">
-              <button class="btn-secondary" onclick="drukujHistoriaSesje('${safeId}')">🖨 Drukuj zbiorówkę</button>
-              <button class="btn-danger" onclick="usunSesje('${safeId}')">🗑 Usuń</button>
+              <button class="btn-secondary" onclick="drukujHistoriaSesje('${safeId}')">${ICON.print} Drukuj zbiorówkę</button>
+              <button class="btn-danger" onclick="usunSesje('${safeId}')">${ICON.trash} Usuń</button>
             </div>
           </div>
         </div>
@@ -772,7 +780,7 @@ export function renderBaze(appState) {
           <td class="center">${d}</td>
           <td class="center">
             <button class="btn-ghost-sm" onclick="usunZBazy(decodeURIComponent('${safeId}'))">
-              🗑
+              ${ICON.trashSm}
             </button>
           </td>
         </tr>

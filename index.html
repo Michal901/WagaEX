@@ -35,18 +35,18 @@
 
       <nav class="nav" id="navMenu">
         <button class="nav-btn active" data-tab="kalkulator">
-          <span class="nav-icon">⊞</span> Kalkulator
+          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="8" y2="10.01"/><line x1="12" y1="10" x2="12" y2="10.01"/><line x1="16" y1="10" x2="16" y2="10.01"/><line x1="8" y1="14" x2="8" y2="14.01"/><line x1="12" y1="14" x2="12" y2="14.01"/><line x1="16" y1="14" x2="16" y2="14.01"/><line x1="8" y1="18" x2="8" y2="18.01"/><line x1="12" y1="18" x2="16" y2="18"/></svg></span> Kalkulator
         </button>
         <button class="nav-btn" data-tab="zbiorcza">
-          <span class="nav-icon">∑</span> Zbiorówka
+          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="12" y2="15"/></svg></span> Zbiorówka
           <span class="badge" id="badgeNorm">0</span>
         </button>
         <button class="nav-btn" data-tab="historia">
-          <span class="nav-icon">◷</span> Historia
+          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span> Historia
           <span class="badge" id="badgeHistoria">0</span>
         </button>
         <button class="nav-btn" data-tab="baza">
-          <span class="nav-icon">◈</span> Baza produktów
+          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></span> Baza produktów
           <span class="badge" id="badgeBaza">0</span>
         </button>
         <div class="theme-switch-wrap">
@@ -109,7 +109,7 @@
             <div id="wyniki-suma" class="suma-box"></div>
             <div class="wyniki-akcje">
               <button class="btn-accent" id="btnDodajDoSesji">＋ Dodaj do sesji</button>
-              <button class="btn-secondary" id="btnDrukujNorme">🖨 Drukuj normę</button>
+              <button class="btn-secondary" id="btnDrukujNorme"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Drukuj normę</button>
             </div>
           </div>
         </div>
@@ -120,7 +120,7 @@
             <span class="section-label" style="margin:0">Bieżąca sesja</span>
             <div style="display:flex;gap:8px;align-items:center;">
               <span id="sesja-licznik" class="sesja-licznik"></span>
-              <button class="btn-danger-sm" id="btnResetSesji">✕ Reset sesji</button>
+              <button class="btn-danger-sm" id="btnResetSesji"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Reset sesji</button>
             </div>
           </div>
           <div id="sesja-normy-lista"></div>
@@ -141,8 +141,8 @@
             <p class="page-sub">Zsumowane produkty ze wszystkich norm bieżącej sesji</p>
           </div>
           <div style="display:flex;gap:8px;">
-            <button class="btn-secondary" id="btnDrukujZbiorcza">🖨 Drukuj zbiorówkę</button>
-            <button class="btn-accent" id="btnZapiszSesje">💾 Zapisz sesję</button>
+            <button class="btn-secondary" id="btnDrukujZbiorcza"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Drukuj zbiorówkę</button>
+            <button class="btn-accent" id="btnZapiszSesje"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Zapisz sesję</button>
           </div>
         </div>
         <div id="zbiorcza-content">
@@ -161,9 +161,9 @@
           </div>
           <div style="display:flex;gap:8px;align-items:center;">
             <div class="search-wrap">
-              <input type="text" id="historiaSzukaj" placeholder="🔍 Szukaj w historii..." />
+              <input type="text" id="historiaSzukaj" placeholder="Szukaj w historii..." />
             </div>
-            <button class="btn-danger" id="btnWyczyscHistorie">🗑 Wyczyść historię</button>
+            <button class="btn-danger" id="btnWyczyscHistorie"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg> Wyczyść historię</button>
           </div>
         </div>
         <div id="historia-lista"></div>
@@ -177,7 +177,7 @@
             <p class="page-sub">Produkty zapamiętane automatycznie z poprzednich sesji</p>
           </div>
           <div class="search-wrap">
-            <input type="text" id="bazaSzukaj" placeholder="🔍 Szukaj produktu..." />
+            <input type="text" id="bazaSzukaj" placeholder="Szukaj produktu..." />
           </div>
         </div>
 

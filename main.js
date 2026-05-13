@@ -9,11 +9,11 @@ import {
   obliczWage,
   wyczyscFormularz,
   zmienMnoznik,
-} from "./calculator.js";
+} from "./src/js/calculator.js";
 
-import { AppState } from "./state.js";
-import { StorageManager } from "./storage.js";
-import { toast } from "./utils.js";
+import { AppState } from "./src/js/state.js";
+import { StorageManager } from "./src/js/storage.js";
+import { toast } from "./src/js/utils.js";
 
 import {
   aktualizujBadge,
@@ -34,7 +34,7 @@ import {
   usunZBazy,
   wyczyscHistorie,
   zapiszSesje,
-} from "./ui.js";
+} from "./src/js/ui.js";
 
 // ==========================
 // INIT INSTANCES

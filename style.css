@@ -399,6 +399,44 @@ textarea {
   padding: 20px;
   resize: vertical;
 }
+textarea.has-error {
+  border-left: 3px solid var(--danger);
+}
+.input-editable {
+  width: 100%;
+  min-height: 160px;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.7;
+  padding: 20px;
+  overflow-y: auto;
+  max-height: 400px;
+  display: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+.input-editable .line-ok {
+  padding: 0 2px;
+}
+.input-editable .line-error {
+  background: rgba(255, 79, 79, 0.12);
+  border-left: 3px solid var(--danger);
+  padding-left: 8px;
+  margin-left: -11px;
+  border-radius: 2px;
+}
+.input-editable .line-error-hint {
+  color: var(--danger);
+  font-size: 11px;
+  font-style: italic;
+  opacity: 0.85;
+  user-select: none;
+  pointer-events: none;
+}
 textarea::placeholder {
   color: var(--text3);
 }

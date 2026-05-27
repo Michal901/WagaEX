@@ -93,7 +93,27 @@ export function parsujLinie(line) {
 }
 
 export function obliczWage(appState) {
-  const text = document.getElementById("inputText").value.trim();
+  // Pobierz tekst z editable diva (jeśli widoczny) lub textarea
+  const editDiv = document.getElementById("inputEditable");
+  const textarea = document.getElementById("inputText");
+  let text;
+  if (editDiv && editDiv.style.display !== "none") {
+    // Pobierz linie z diva (każdy child div = linia)
+    const lines = [];
+    editDiv.querySelectorAll("div").forEach((div) => {
+      // Usuń hinty błędów
+      const clone = div.cloneNode(true);
+      clone.querySelectorAll(".line-error-hint").forEach((h) => h.remove());
+      lines.push(clone.textContent);
+    });
+    text = lines.join("\n").trim();
+    // Przenieś tekst do textarea i przywróć widok
+    textarea.value = text;
+    editDiv.style.display = "none";
+    textarea.style.display = "block";
+  } else {
+    text = textarea.value.trim();
+  }
   if (!text) {
     toast("Wklej dane normy do pola tekstowego", true);
     return;
@@ -117,7 +137,7 @@ export function obliczWage(appState) {
   if (bledy.length) {
     let h =
       '<div class="bledne-info"><strong>❌ Błędy – popraw dane i spróbuj ponownie:</strong>';
-    bledy.forEach((b) => {
+    bledy.forEach((b, idx) => {
       h += `<div class="bledna-linia">• ${esc(b.linia)} &rarr; ${b.blad}</div>`;
     });
     h += "</div>";
@@ -125,8 +145,54 @@ export function obliczWage(appState) {
     document.getElementById("wyniki-suma").innerHTML = "";
     document.getElementById("wyniki-wrap").style.display = "block";
     appState.aktualneWyniki = null;
+
+    // Zamień textarea na contenteditable z podświetlonymi błędami
+    const textarea = document.getElementById("inputText");
+    const lines = textarea.value.split("\n");
+    const errorMap = new Map(bledy.map((b) => [b.linia, b.blad]));
+
+    let editDiv = document.getElementById("inputEditable");
+    if (!editDiv) {
+      editDiv = document.createElement("div");
+      editDiv.id = "inputEditable";
+      editDiv.className = "input-editable";
+      editDiv.contentEditable = "true";
+      editDiv.spellcheck = false;
+      textarea.parentElement.insertBefore(editDiv, textarea);
+    }
+
+    editDiv.innerHTML = lines.map((line) => {
+      const blad = line.trim() ? errorMap.get(line.trim()) : null;
+      if (blad) {
+        return `<div class="line-error">${esc(line)}<span class="line-error-hint" contenteditable="false"> ← ${blad}</span></div>`;
+      }
+      return `<div class="line-ok">${esc(line) || "<br>"}</div>`;
+    }).join("");
+
+    textarea.style.display = "none";
+    editDiv.style.display = "block";
+
+    // Przy ponownym obliczeniu — przenieś tekst z powrotem do textarea (bez hintów)
+    editDiv.oninput = () => {
+      const lines = [];
+      editDiv.querySelectorAll("div").forEach((div) => {
+        const clone = div.cloneNode(true);
+        clone.querySelectorAll(".line-error-hint").forEach((h) => h.remove());
+        lines.push(clone.textContent);
+      });
+      textarea.value = lines.join("\n");
+    };
+
     return;
   }
+
+  // Przywróć textarea jeśli nie ma błędów
+  const existingEditDiv = document.getElementById("inputEditable");
+  if (existingEditDiv) {
+    existingEditDiv.style.display = "none";
+    document.getElementById("inputText").style.display = "block";
+  }
+  document.getElementById("inputText").classList.remove("has-error");
 
   if (!produkty.length) {
     toast("Brak rozpoznanych produktów", true);
@@ -363,6 +429,10 @@ function aktualizujHint() {
 
 function wyczyscFormularz(appState) {
   document.getElementById("inputText").value = "";
+  document.getElementById("inputText").classList.remove("has-error");
+  document.getElementById("inputText").style.display = "block";
+  const editDiv = document.getElementById("inputEditable");
+  if (editDiv) editDiv.style.display = "none";
   document.getElementById("multiplier").value = 1;
   document.getElementById("wyniki-wrap").style.display = "none";
   appState.aktualneWyniki = null;

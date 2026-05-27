@@ -28,9 +28,9 @@ export function renderSesjaChips(appState) {
           (p, i) => `
       <tr>
         <td class="mono" style="color:var(--text3);font-size:11px">${i + 1}</td>
-        <td class="mono" style="color:var(--accent);font-weight:600">${esc(p.kod || "—")}</td>
         <td>${esc(p.nazwa)}</td>
         <td class="center mono">${p.ilosc}</td>
+        <td class="mono" style="color:var(--accent);font-weight:600">${esc(p.kod || "—")}</td>
         <td class="center mono">${p.waga} kg</td>
         <td class="right mono"><strong>${(p.waga * p.ilosc).toFixed(2)} kg</strong></td>
       </tr>`,
@@ -50,9 +50,9 @@ export function renderSesjaChips(appState) {
       </div>
       <div class="norma-body" id="body-norma-${n.id}">
         <table class="results-table" style="margin-top:12px">
-          <thead><tr><th>#</th><th class="mono">Kod</th><th>Nazwa</th><th class="center">Ilość</th><th class="center">Waga jedn.</th><th class="right">Waga łączna</th></tr></thead>
+          <thead><tr><th>#</th><th>Nazwa</th><th class="center">Ilość</th><th class="mono">Kod</th><th class="center">Waga jedn.</th><th class="right">Waga łączna</th></tr></thead>
           <tbody>${rows}</tbody>
-          <tfoot><tr><td colspan="5" class="right">Łączna waga:</td><td class="right">${n.totalKg.toFixed(2)} kg</td></tr></tfoot>
+          <tfoot><tr><td colspan="2" class="right">Łączna:</td><td class="center mono"><strong>${n.produkty.reduce((s, p) => s + p.ilosc, 0)}</strong></td><td></td><td></td><td class="right">${n.totalKg.toFixed(2)} kg</td></tr></tfoot>
         </table>
         <div class="norma-actions">
           <button class="btn-secondary" onclick="kopijNormeZSesji('${n.id}')">${ICON.copy} Kopiuj normę</button>
@@ -122,9 +122,9 @@ export function renderZbiorcza(appState) {
       (p, i) => `
     <tr>
       <td class="mono" style="color:var(--text3);font-size:11px">${i + 1}</td>
-      <td class="mono" style="color:var(--accent);font-weight:600">${esc(p.kod || "—")}</td>
       <td>${esc(p.nazwa)}</td>
       <td class="center mono"><strong>${Number.isInteger(p.iloscTotal) ? p.iloscTotal : p.iloscTotal.toFixed(2)}</strong></td>
+      <td class="mono" style="color:var(--accent);font-weight:600">${esc(p.kod || "—")}</td>
       <td class="center mono">${p.waga} kg</td>
       <td class="right mono"><strong>${(p.waga * p.iloscTotal).toFixed(2)} kg</strong></td>
     </tr>`,
@@ -145,9 +145,9 @@ export function renderZbiorcza(appState) {
       <thead>
         <tr>
           <th>#</th>
-          <th class="mono">Kod</th>
           <th>Nazwa produktu</th>
           <th class="center">Łączna ilość</th>
+          <th class="mono">Kod</th>
           <th class="center">Waga jedn.</th>
           <th class="right">Waga łączna</th>
         </tr>
@@ -155,7 +155,10 @@ export function renderZbiorcza(appState) {
       <tbody>${rows}</tbody>
       <tfoot>
         <tr>
-          <td colspan="5" class="right">Łączna waga zbiorówki:</td>
+          <td colspan="2" class="right">Łączna:</td>
+          <td class="center mono"><strong>${lista.reduce((s, p) => s + p.iloscTotal, 0)}</strong></td>
+          <td></td>
+          <td></td>
           <td class="right">${totalKg.toFixed(2)} kg</td>
         </tr>
       </tfoot>
@@ -524,9 +527,9 @@ export function renderHistorie(appState) {
               (p, i) => `
       <tr>
         <td class="mono" style="color:var(--text3);font-size:11px">${i + 1}</td>
-        <td class="mono" style="color:var(--accent);font-weight:600">${esc(getKod(p) || "—")}</td>
         <td>${esc(p.nazwa)}</td>
         <td class="center mono">${p.ilosc}</td>
+        <td class="mono" style="color:var(--accent);font-weight:600">${esc(getKod(p) || "—")}</td>
         <td class="center mono">${p.waga} kg</td>
         <td class="right mono"><strong>${(p.waga * p.ilosc).toFixed(2)} kg</strong></td>
       </tr>`,
@@ -547,9 +550,9 @@ export function renderHistorie(appState) {
             </div>
             <div class="norma-body" id="body-norma-${normaSafeId}">
               <table class="results-table" style="margin-top:12px">
-                <thead><tr><th>#</th><th class="mono">Kod</th><th>Nazwa</th><th class="center">Ilość</th><th class="center">Waga jedn.</th><th class="right">Waga łączna</th></tr></thead>
+                <thead><tr><th>#</th><th>Nazwa</th><th class="center">Ilość</th><th class="mono">Kod</th><th class="center">Waga jedn.</th><th class="right">Waga łączna</th></tr></thead>
                 <tbody>${normsRows}</tbody>
-                <tfoot><tr><td colspan="5" class="right">Łączna waga:</td><td class="right">${n.totalKg.toFixed(2)} kg</td></tr></tfoot>
+                <tfoot><tr><td colspan="2" class="right">Łączna:</td><td class="center mono"><strong>${n.produkty.reduce((s, p) => s + p.ilosc, 0)}</strong></td><td></td><td></td><td class="right">${n.totalKg.toFixed(2)} kg</td></tr></tfoot>
               </table>
               <div class="norma-actions">
                 <button class="btn-secondary" onclick="kopijHistoriaNorme('${safeId}','${n.id}')">${ICON.copy} Kopiuj normę</button>
@@ -565,9 +568,9 @@ export function renderHistorie(appState) {
           (p, i) => `
       <tr>
         <td class="mono" style="color:var(--text3);font-size:11px">${i + 1}</td>
-        <td class="mono" style="color:var(--accent);font-weight:600">${esc(getKod(p) || "—")}</td>
         <td>${esc(p.nazwa)}</td>
         <td class="center mono">${Number.isInteger(p.iloscTotal) ? p.iloscTotal : p.iloscTotal.toFixed(2)}</td>
+        <td class="mono" style="color:var(--accent);font-weight:600">${esc(getKod(p) || "—")}</td>
         <td class="center mono">${p.waga} kg</td>
         <td class="right mono">${(p.waga * p.iloscTotal).toFixed(2)} kg</td>
       </tr>`,
@@ -614,9 +617,9 @@ export function renderHistorie(appState) {
               <thead>
                 <tr>
                   <th>#</th>
-                  <th class="mono">Kod</th>
                   <th>Nazwa</th>
                   <th class="center">Łączna ilość</th>
+                  <th class="mono">Kod</th>
                   <th class="center">Waga jedn.</th>
                   <th class="right">Waga łączna</th>
                 </tr>
@@ -624,7 +627,10 @@ export function renderHistorie(appState) {
               <tbody>${rows}</tbody>
               <tfoot>
                 <tr>
-                  <td colspan="5" class="right">Łączna waga:</td>
+                  <td colspan="2" class="right">Łączna:</td>
+                  <td class="center mono"><strong>${lista.reduce((s, p) => s + p.iloscTotal, 0)}</strong></td>
+                  <td></td>
+                  <td></td>
                   <td class="right">${s.totalKg.toFixed(2)} kg</td>
                 </tr>
               </tfoot>

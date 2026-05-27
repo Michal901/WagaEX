@@ -167,9 +167,9 @@ export function renderWyniki(produkty, mult, appState) {
 
     rows += `<tr${wagaWarn ? ' class="row-warn"' : ""}>
       <td class="mono" style="color:var(--text3);font-size:11px">${i + 1}</td>
-      <td class="mono" style="color:var(--accent);font-weight:600">${esc(p.kod || "—")}</td>
       <td>${esc(p.nazwa)}</td>
       <td class="center mono editable-cell" data-field="ilosc" data-index="${i}" title="Kliknij aby edytować">${ilCell}</td>
+      <td class="mono" style="color:var(--accent);font-weight:600">${esc(p.kod || "—")}</td>
       <td class="center mono editable-cell" data-field="waga" data-index="${i}" title="Kliknij aby edytować">${p.waga} kg${wagaWarn}</td>
       <td class="right mono"><strong>${wXN.toFixed(2)} kg</strong></td>
     </tr>`;
@@ -196,9 +196,9 @@ export function renderWyniki(produkty, mult, appState) {
       <thead>
         <tr>
           <th>#</th>
-          <th class="mono">Kod</th>
           <th>Nazwa produktu</th>
           <th class="center">Ilość${mult > 1 ? " (×" + mult + ")" : ""}</th>
+          <th class="mono">Kod</th>
           <th class="center">Waga jedn.</th>
           <th class="right">Waga łączna</th>
         </tr>
@@ -206,7 +206,10 @@ export function renderWyniki(produkty, mult, appState) {
       <tbody>${rows}</tbody>
       <tfoot>
         <tr>
-          <td colspan="5" class="right">Suma normy${mult > 1 ? " ×" + mult : ""}:</td>
+          <td colspan="2" class="right">Suma normy${mult > 1 ? " ×" + mult : ""}:</td>
+          <td class="center mono"><strong>${produkty.reduce((s, p) => s + p.iloscX, 0)}</strong></td>
+          <td></td>
+          <td></td>
           <td class="right">${tN.toFixed(2)} kg</td>
         </tr>
       </tfoot>

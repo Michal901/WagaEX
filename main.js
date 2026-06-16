@@ -16,6 +16,12 @@ import { StorageManager } from "./src/js/storage.js";
 import { toast } from "./src/js/utils.js";
 
 import {
+  obliczNormeOptymalna,
+  wczytajProdukty,
+  wyczyscNorme,
+} from "./src/js/norma.js";
+
+import {
   aktualizujBadge,
   dodajProduktReczny,
   drukujHistoriaSesje,
@@ -294,6 +300,21 @@ async function init() {
   document
     .getElementById("btnDodajProdukt")
     .addEventListener("click", () => dodajProduktReczny(appState));
+
+  // ==========================
+  // NORMA OPTYMALNA
+  // ==========================
+  document
+    .getElementById("btnNormaWczytaj")
+    .addEventListener("click", () => wczytajProdukty(appState));
+
+  document
+    .getElementById("btnNormaOblicz")
+    .addEventListener("click", () => obliczNormeOptymalna(appState));
+
+  document
+    .getElementById("btnNormaWyczysc")
+    .addEventListener("click", () => wyczyscNorme());
 
   // ==========================
   // THEME TOGGLE

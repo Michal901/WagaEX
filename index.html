@@ -46,6 +46,9 @@
           <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></span> Baza produktów
           <span class="badge" id="badgeBaza">0</span>
         </button>
+        <button class="nav-btn" data-tab="norma">
+          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span> Norma optymalna
+        </button>
         <div class="theme-switch-wrap">
           <svg class="theme-switch-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
           <label class="theme-switch" title="Zmień motyw">
@@ -192,6 +195,50 @@
         </div>
 
         <div id="baza-lista"></div>
+      </div>
+
+      <!-- ══════════ TAB: NORMA OPTYMALNA ══════════ -->
+      <div class="tab-content" id="tab-norma">
+        <div class="page-header">
+          <div>
+            <h1>Norma optymalna</h1>
+            <p class="page-sub">Dobierz produkty maksymalizujące łączną wagę w ramach budżetu i limitu wagi</p>
+          </div>
+        </div>
+
+        <div class="input-area">
+          <textarea id="normaInput"
+            placeholder="Wklej listę produktów (nazwa/kod + ilość, opcjonalnie waga „kg” i cena na końcu)&#10;&#10;Przykład:&#10;NAGRZEWNICA OLEJOWA | 8kW M80950 9.5kg	12   125,44&#10;Odkurzacz piorący 20L Kaminer 23918 6kg	3&#10;Sztaluga malarska Maaleo 22621	4&#10;&#10;Waga i cena wczytane z linii podpowiadają się automatycznie (edytowalne). Brakujące pola uzupełnisz ręcznie."></textarea>
+          <div class="input-actions">
+            <button class="btn-primary" id="btnNormaWczytaj">Wczytaj produkty →</button>
+            <button class="btn-ghost" id="btnNormaWyczysc">Wyczyść</button>
+          </div>
+        </div>
+
+        <!-- Wiersze do uzupełnienia cen i wag -->
+        <div id="norma-wiersze-wrap" style="display:none;">
+          <div class="section-label">Produkty — uzupełnij cenę i wagę każdej sztuki</div>
+          <div id="norma-wiersze"></div>
+
+          <div class="norma-limity">
+            <div class="norma-limit-field">
+              <label for="normaBudzet">Budżet (zł)</label>
+              <input type="text" id="normaBudzet" inputmode="decimal" placeholder="np. 500" />
+            </div>
+            <div class="norma-limit-field">
+              <label for="normaLimitWagi">Limit wagi (kg)</label>
+              <input type="text" id="normaLimitWagi" inputmode="decimal" placeholder="np. 30" />
+            </div>
+            <button class="btn-accent" id="btnNormaOblicz">Oblicz normę optymalną →</button>
+          </div>
+        </div>
+
+        <!-- Wynik: dobrane produkty + karty podsumowania -->
+        <div id="norma-wynik-wrap" style="display:none;">
+          <div class="section-label">Wynik — dobrane produkty</div>
+          <div id="norma-wynik-tabela"></div>
+          <div id="norma-karty" class="norma-karty"></div>
+        </div>
       </div>
 
     </main>

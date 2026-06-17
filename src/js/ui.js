@@ -67,6 +67,15 @@ export function renderSesjaChips(appState) {
   const totalAll = appState.biezacaSesja.reduce((s, n) => s + n.totalKg, 0);
   document.getElementById("sesja-total-kg").innerHTML =
     `Łączna waga sesji: <strong>${totalAll.toFixed(2)} kg</strong>`;
+
+  // Pokaż przycisk eksportu do AHK tylko gdy jest co najmniej jedna norma z produktami
+  const btnAHK = document.getElementById("btnEksportujAHK");
+  if (btnAHK) {
+    const maNormyZProduktami = appState.biezacaSesja.some(
+      (n) => n.produkty && n.produkty.length > 0,
+    );
+    btnAHK.style.display = maNormyZProduktami ? "" : "none";
+  }
 }
 
 export function usunNorme(appState, id) {

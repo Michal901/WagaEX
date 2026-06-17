@@ -5,6 +5,7 @@
 import {
   aktualizujHint,
   dodajDoSesji,
+  eksportujDoAHK,
   kopijNormeZSesji,
   obliczWage,
   wyczyscFormularz,
@@ -252,6 +253,10 @@ async function init() {
   document
     .getElementById("btnResetSesji")
     .addEventListener("click", () => resetSesji(appState));
+
+  document
+    .getElementById("btnEksportujAHK")
+    .addEventListener("click", () => eksportujDoAHK(appState));
 
   document.getElementById("btnIdZbiorówka").addEventListener("click", () => {
     document

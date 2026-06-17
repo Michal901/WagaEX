@@ -516,4 +516,42 @@ export function kopijNormeZSesji(appState, id) {
   });
 }
 
+// Eksportuj wszystkie normy z bieżącej sesji do pliku dla skryptu AutoHotkey
+export function eksportujDoAHK(appState) {
+  // Tylko normy które mają jakiekolwiek produkty
+  const normy = appState.biezacaSesja.filter(
+    (n) => n.produkty && n.produkty.length > 0,
+  );
+
+  if (!normy.length) {
+    toast("Brak norm z produktami do eksportu", true);
+    return;
+  }
+
+  const linie = [];
+  for (const n of normy) {
+    linie.push("NORMA");
+    for (const p of n.produkty) {
+      // Ilość oryginalna (bez mnożnika)
+      const ilosc = Number.isInteger(p.ilosc)
+        ? p.ilosc
+        : p.ilosc.toFixed(2).replace(/\.?0+$/, "");
+      linie.push(`${p.kod || ""},${ilosc}`);
+    }
+  }
+
+  const tekst = linie.join("\n");
+  const blob = new Blob([tekst], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "normy_ahk.txt";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  toast("✓ Wyeksportowano normy do pliku normy_ahk.txt");
+}
+
 export { aktualizujHint, getMnoznik, wyczyscFormularz, zmienMnoznik };

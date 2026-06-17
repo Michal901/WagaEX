@@ -196,9 +196,17 @@ async function init() {
   const animCheckbox = document.getElementById("btnAnim");
   if (animCheckbox) {
     animCheckbox.checked = bgAktywna;
-    animCheckbox.addEventListener("change", () =>
-      setBgAnimacja(animCheckbox.checked),
-    );
+
+    let punktAnim = null;
+    const animLabel = animCheckbox.closest(".theme-switch");
+    animLabel?.addEventListener("pointerdown", (e) => {
+      punktAnim = { x: e.clientX, y: e.clientY };
+    });
+
+    animCheckbox.addEventListener("change", () => {
+      setBgAnimacja(animCheckbox.checked);
+      punktAnim = null;
+    });
   }
   initBackgroundFX();
 
@@ -350,10 +358,21 @@ async function init() {
   const themeCheckbox = document.getElementById("btnTheme");
   themeCheckbox.checked = savedTheme === "dark";
 
+  // Zapamiętaj punkt kliknięcia, żeby promieniowanie wyszło z przełącznika
+  let punktKliku = null;
+  const themeLabel = themeCheckbox.closest(".theme-switch");
+  themeLabel?.addEventListener("pointerdown", (e) => {
+    punktKliku = { x: e.clientX, y: e.clientY };
+  });
+
   themeCheckbox.addEventListener("change", () => {
     const next = themeCheckbox.checked ? "dark" : "light";
-    document.documentElement.setAttribute("data-theme", next);
-    localStorage.setItem("wagaex_theme", next);
+    const p = punktKliku || {
+      x: window.innerWidth - 40,
+      y: window.innerHeight - 60,
+    };
+    przelaczMotyw(next, p.x, p.y);
+    punktKliku = null;
   });
 
   // ==========================
@@ -388,6 +407,8 @@ async function init() {
 let bgRafId = null; // id pętli animacji (null = zatrzymana)
 let bgAktywna = true; // czy animacja ma działać
 let bgStart = null; // funkcja startująca pętlę (ustawiana w initBackgroundFX)
+let bgPoof = null; // efekt "poof" od punktu (ustawiany w initBackgroundFX)
+let bgWidocznosc = null; // stopniowe pojawianie/znikanie (ustawiane w initBackgroundFX)
 
 // Włącz/wyłącz animację tła i zapamiętaj wybór.
 function setBgAnimacja(on) {
@@ -398,17 +419,52 @@ function setBgAnimacja(on) {
     // tryb prywatny — ignorujemy
   }
 
-  if (on) {
-    bgStart?.();
-  } else {
-    if (bgRafId) cancelAnimationFrame(bgRafId);
-    bgRafId = null;
-    const canvas = document.getElementById("bgCanvas");
-    if (canvas) {
-      const ctx = canvas.getContext("2d");
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // Pojawianie/znikanie cząstek po kolei (nie wszystkie na raz).
+  // Pętla sama się zatrzyma i wyczyści, gdy wszystkie znikną.
+  bgWidocznosc?.(on);
+}
+
+// ==========================
+// ZMIANA MOTYWU – okrągłe promieniowanie od punktu kliknięcia
+// ==========================
+function przelaczMotyw(next, x, y) {
+  const zastosuj = () => {
+    document.documentElement.setAttribute("data-theme", next);
+    try {
+      localStorage.setItem("wagaex_theme", next);
+    } catch {
+      // tryb prywatny — ignorujemy
     }
+  };
+
+  // Brak wsparcia View Transitions API → zmiana natychmiastowa
+  if (!document.startViewTransition) {
+    zastosuj();
+    return;
   }
+
+  const vt = document.startViewTransition(zastosuj);
+  vt.ready
+    .then(() => {
+      const r = Math.hypot(
+        Math.max(x, window.innerWidth - x),
+        Math.max(y, window.innerHeight - y),
+      );
+      document.documentElement.animate(
+        {
+          clipPath: [
+            `circle(0px at ${x}px ${y}px)`,
+            `circle(${r}px at ${x}px ${y}px)`,
+          ],
+        },
+        {
+          duration: 600,
+          easing: "ease-in-out",
+          pseudoElement: "::view-transition-new(root)",
+        },
+      );
+    })
+    .catch(() => {});
 }
 
 function initBackgroundFX() {
@@ -420,16 +476,43 @@ function initBackgroundFX() {
     H = 0,
     dpr = 1;
   let czastki = [];
+  let meteory = [];
+  let blysk = 0; // chwilowy rozbłysk "poof" (1 → 0)
+  let cel = 0; // docelowa widoczność (1 = pokaż, 0 = ukryj)
+  const METEOR_SZANSA = 0.0028; // ~1 meteor co ~360 klatek
+  const METEOR_MAX = 2;
+
+  // Kursor i parametry interakcji
+  let mx = null,
+    my = null;
   const DYSTANS = 140; // maks. odległość łączenia liniami (px)
+  const UCIECZKA_R = 130; // promień odpychania od kursora (px)
+  const UCIECZKA_SILA = 1.1; // siła odpychania
+  const WYBUCH_R = 200; // promień wybuchu po kliknięciu (px)
+  const WYBUCH_SILA = 22; // siła wybuchu
+  const TARCIE = 0.9; // sprężynowanie wychylenia z powrotem do 0
+  const MAX_OFFSET = 150; // maks. wychylenie od pozycji bazowej (px)
+  const RAMP = 0.045; // tempo narastania/zanikania widoczności
+  const MAX_STAGGER = 50; // maks. losowe opóźnienie (klatki) — nierównomierność
 
   function nowaCzastka() {
     return {
+      // pozycja bazowa — dryfuje równomiernie (utrzymuje gęstość)
       x: Math.random() * W,
       y: Math.random() * H,
       vx: (Math.random() - 0.5) * 0.25,
       vy: (Math.random() - 0.5) * 0.25,
+      // wychylenie z interakcji — sprężynuje do 0 (cząstka wraca na miejsce)
+      ox: 0,
+      oy: 0,
+      // pozycja renderowana (bazowa + wychylenie)
+      rx: 0,
+      ry: 0,
       r: Math.random() * 1.6 + 0.6,
       tw: Math.random() * Math.PI * 2, // faza migotania
+      wid: 0, // bieżąca widoczność (0..1)
+      delay: 0, // opóźnienie startu ramp (klatki)
+      pb: 0,   // per-cząstka rozbłysk przy pojawieniu (1→0)
     };
   }
 
@@ -443,9 +526,11 @@ function initBackgroundFX() {
     canvas.style.height = H + "px";
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    // Gęstość zależna od powierzchni ekranu (z rozsądnymi limitami)
-    const ile = Math.max(45, Math.min(110, Math.round((W * H) / 22000)));
+    const ile = Math.max(60, Math.min(140, Math.round((W * H) / 15000)));
+    meteory = [];
     czastki = Array.from({ length: ile }, nowaCzastka);
+    // Po zmianie rozmiaru nowe cząstki dostają aktualną widoczność (bez re-fade)
+    for (const p of czastki) p.wid = cel;
   }
 
   function kolorAkcentu() {
@@ -456,54 +541,190 @@ function initBackgroundFX() {
     );
   }
 
-  function klatka() {
-    if (!bgAktywna) {
-      bgRafId = null;
-      return;
+  // Ogranicz długość wektora wychylenia (zapobiega "wystrzeleniu" cząstki)
+  function ogranicz(p) {
+    const d = Math.hypot(p.ox, p.oy);
+    if (d > MAX_OFFSET) {
+      p.ox = (p.ox / d) * MAX_OFFSET;
+      p.oy = (p.oy / d) * MAX_OFFSET;
     }
+  }
+
+  function spawnMeteor() {
+    const kat = Math.PI / 5 + Math.random() * (Math.PI / 7); // ~26–51° od poziomu
+    const spd = 4 + Math.random() * 3.5;
+    const zGory = Math.random() < 0.65;
+    return {
+      x: zGory ? Math.random() * W * 0.85 : -10,
+      y: zGory ? -10 : Math.random() * H * 0.45,
+      vx: Math.cos(kat) * spd,
+      vy: Math.sin(kat) * spd,
+      life: 1,
+      decay: 1 / (80 + Math.random() * 60), // żyje 80–140 klatek
+      len: 55 + Math.random() * 75,
+    };
+  }
+
+  // Wybuch — wychyl cząstki w promieniu od punktu kliknięcia (wrócą sprężyście)
+  function wybuch(cx, cy) {
+    for (const p of czastki) {
+      const dx = p.rx - cx;
+      const dy = p.ry - cy;
+      const d = Math.hypot(dx, dy) || 1;
+      if (d < WYBUCH_R) {
+        const f = (1 - d / WYBUCH_R) * WYBUCH_SILA;
+        p.ox += (dx / d) * f;
+        p.oy += (dy / d) * f;
+        ogranicz(p);
+      }
+    }
+  }
+
+  function klatka() {
     ctx.clearRect(0, 0, W, H);
     const kolor = kolorAkcentu();
+
+    // Zanikanie rozbłysku "poof"
+    blysk = blysk > 0.01 ? blysk * 0.92 : 0;
+
+    // Aktualizacja: pozycja bazowa dryfuje, wychylenie sprężynuje do 0
+    let widoczne = 0;
+    for (const p of czastki) {
+      // Stopniowe pojawianie/znikanie — każda cząstka ma własne opóźnienie
+      if (p.delay > 0) {
+        p.delay--;
+        // Gdy opóźnienie mija i cząstka ma się pojawić — rozbłysk
+        if (p.delay === 0 && cel === 1) p.pb = 1;
+      } else if (p.wid < cel) p.wid = Math.min(cel, p.wid + RAMP);
+      else if (p.wid > cel) p.wid = Math.max(cel, p.wid - RAMP);
+      p.pb = p.pb > 0.01 ? p.pb * 0.92 : 0;
+      if (p.wid > 0.01) widoczne++;
+
+      // Bazowy dryf (utrzymuje równomierną gęstość — brak trwałych dziur)
+      p.x += p.vx;
+      p.y += p.vy;
+      if (p.x < -10) p.x = W + 10;
+      else if (p.x > W + 10) p.x = -10;
+      if (p.y < -10) p.y = H + 10;
+      else if (p.y > H + 10) p.y = -10;
+      p.tw += 0.02;
+
+      // Odpychanie liczone względem aktualnej pozycji renderowanej
+      if (mx !== null) {
+        const dx = p.x + p.ox - mx;
+        const dy = p.y + p.oy - my;
+        const d = Math.hypot(dx, dy) || 1;
+        if (d < UCIECZKA_R) {
+          const f = (1 - d / UCIECZKA_R) * UCIECZKA_SILA;
+          p.ox += (dx / d) * f;
+          p.oy += (dy / d) * f;
+        }
+      }
+
+      // Sprężynowanie wychylenia z powrotem do zera + ograniczenie
+      p.ox *= TARCIE;
+      p.oy *= TARCIE;
+      ogranicz(p);
+
+      p.rx = p.x + p.ox;
+      p.ry = p.y + p.oy;
+    }
 
     // Linie między bliskimi cząsteczkami
     ctx.strokeStyle = kolor;
     ctx.lineWidth = 1;
     for (let i = 0; i < czastki.length; i++) {
       const a = czastki[i];
-      a.x += a.vx;
-      a.y += a.vy;
-      a.tw += 0.02;
-
-      // Zawijanie na krawędziach
-      if (a.x < -10) a.x = W + 10;
-      else if (a.x > W + 10) a.x = -10;
-      if (a.y < -10) a.y = H + 10;
-      else if (a.y > H + 10) a.y = -10;
-
       for (let j = i + 1; j < czastki.length; j++) {
         const b = czastki[j];
-        const dx = a.x - b.x;
-        const dy = a.y - b.y;
+        const dx = a.rx - b.rx;
+        const dy = a.ry - b.ry;
         const d = Math.hypot(dx, dy);
-        if (d < DYSTANS) {
-          ctx.globalAlpha = (1 - d / DYSTANS) * 0.2;
+        const w = Math.min(a.wid, b.wid);
+        if (d < DYSTANS && w > 0.01) {
+          ctx.globalAlpha = Math.min(
+            1,
+            ((1 - d / DYSTANS) * 0.2 + blysk * 0.45) * w,
+          );
           ctx.beginPath();
-          ctx.moveTo(a.x, a.y);
-          ctx.lineTo(b.x, b.y);
+          ctx.moveTo(a.rx, a.ry);
+          ctx.lineTo(b.rx, b.ry);
           ctx.stroke();
         }
       }
     }
 
-    // Migoczące punkty
-    ctx.fillStyle = kolor;
-    for (const p of czastki) {
-      ctx.globalAlpha = 0.5 + Math.sin(p.tw) * 0.3;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fill();
+    // Linie od kursora do bliskich cząstek (interaktywny akcent)
+    if (mx !== null) {
+      for (const p of czastki) {
+        const d = Math.hypot(p.rx - mx, p.ry - my);
+        if (d < UCIECZKA_R) {
+          ctx.globalAlpha = (1 - d / UCIECZKA_R) * 0.35 * p.wid;
+          ctx.beginPath();
+          ctx.moveTo(mx, my);
+          ctx.lineTo(p.rx, p.ry);
+          ctx.stroke();
+        }
+      }
     }
 
+    // Spadające gwiazdy (meteory)
+    if (cel === 1 && meteory.length < METEOR_MAX && Math.random() < METEOR_SZANSA) {
+      meteory.push(spawnMeteor());
+    }
+    ctx.lineWidth = 1.2;
+    for (let i = meteory.length - 1; i >= 0; i--) {
+      const m = meteory[i];
+      m.life -= m.decay;
+      if (m.life <= 0 || m.x > W + 20 || m.y > H + 20) { meteory.splice(i, 1); continue; }
+      m.x += m.vx;
+      m.y += m.vy;
+      const spd = Math.hypot(m.vx, m.vy);
+      const tx = m.x - (m.vx / spd) * m.len;
+      const ty = m.y - (m.vy / spd) * m.len;
+      const grad = ctx.createLinearGradient(tx, ty, m.x, m.y);
+      const a = m.life * 0.45;
+      grad.addColorStop(0, `rgba(255,255,255,0)`);
+      grad.addColorStop(0.6, `rgba(255,255,255,${(a * 0.5).toFixed(2)})`);
+      grad.addColorStop(1, `rgba(255,255,255,${a.toFixed(2)})`);
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(tx, ty);
+      ctx.lineTo(m.x, m.y);
+      ctx.stroke();
+      // Świecący czubek
+      ctx.globalAlpha = m.life * 0.7;
+      ctx.fillStyle = "#ffffff";
+      ctx.shadowBlur = 7;
+      ctx.shadowColor = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(m.x, m.y, 1.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+
+    // Migoczące punkty (jaśniejsze i większe podczas "poof")
+    ctx.fillStyle = kolor;
+    ctx.shadowColor = kolor;
+    for (const p of czastki) {
+      const fl = Math.max(p.pb, blysk); // per-cząstka lub globalny poof
+      ctx.globalAlpha = Math.min(1, (0.5 + Math.sin(p.tw) * 0.3 + fl * 0.6) * p.wid);
+      ctx.shadowBlur = fl * 14;
+      ctx.beginPath();
+      ctx.arc(p.rx, p.ry, p.r * (1 + fl * 2), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+
     ctx.globalAlpha = 1;
+
+    // Gdy wyłączone i wszystkie cząstki zniknęły — zatrzymaj i wyczyść
+    if (cel === 0 && widoczne === 0) {
+      ctx.clearRect(0, 0, W, H);
+      bgRafId = null;
+      return;
+    }
     bgRafId = requestAnimationFrame(klatka);
   }
 
@@ -511,9 +732,44 @@ function initBackgroundFX() {
     if (!bgRafId) bgRafId = requestAnimationFrame(klatka);
   };
 
+  // Stopniowe pojawianie (on=true) / znikanie (on=false) — losowy stagger
+  bgWidocznosc = (on) => {
+    cel = on ? 1 : 0;
+    for (const p of czastki) p.delay = Math.floor(Math.random() * MAX_STAGGER);
+    bgStart();
+  };
+
+  // "Poof" — cząstki wybuchają na zewnątrz od punktu + rozbłysk jasności
+  bgPoof = (x, y) => {
+    blysk = 1;
+    for (const p of czastki) {
+      const dx = p.x - x;
+      const dy = p.y - y;
+      const d = Math.hypot(dx, dy) || 1;
+      const f = WYBUCH_SILA * (0.5 + 0.5 * (1 - Math.min(d, 700) / 700));
+      p.ox += (dx / d) * f;
+      p.oy += (dy / d) * f;
+      ogranicz(p);
+    }
+  };
+
+  // Śledzenie kursora i kliknięć (canvas ma pointer-events:none,
+  // więc nasłuchujemy globalnie na oknie)
+  window.addEventListener("pointermove", (e) => {
+    mx = e.clientX;
+    my = e.clientY;
+  });
+  window.addEventListener("pointerout", () => {
+    mx = my = null;
+  });
+  window.addEventListener("pointerdown", (e) => {
+    if (bgAktywna) wybuch(e.clientX, e.clientY);
+  });
+
   window.addEventListener("resize", resize);
   resize();
-  if (bgAktywna) bgStart();
+  // Start: jeśli animacja włączona, cząstki pojawiają się stopniowo
+  if (bgAktywna) bgWidocznosc(true);
 }
 
 // ==========================

@@ -31,7 +31,7 @@
 [data-theme="light"] {
   --bg: #f0f2f5;
   --bg2: #ffffff;
-  --bg2-glass: rgba(255, 255, 255, 0.78);
+  --bg2-glass: rgba(255, 255, 255, 0.88);
   --bg3: #e2e6ed;
   --border: #c0c8d8;
   --border2: #a0adc0;
@@ -62,6 +62,20 @@ body {
   height: 100%;
   z-index: 0;
   pointer-events: none;
+}
+
+/* ===== THEME TRANSITION (okrągłe promieniowanie) ===== */
+/* Wyłączamy domyślny cross-fade — clip-path nowego widoku odsłania motyw */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) {
+  z-index: 0;
+}
+::view-transition-new(root) {
+  z-index: 1;
 }
 
 /* ===== LAYOUT ===== */
@@ -636,7 +650,9 @@ textarea::placeholder {
   border-collapse: collapse;
   font-size: 13px;
   border: 1px solid var(--border);
+  border-radius: var(--radius);
   overflow: hidden;
+  background: var(--bg2);
 }
 .results-table thead th {
   background: var(--bg3);
@@ -650,6 +666,7 @@ textarea::placeholder {
   border-bottom: 1px solid var(--border);
 }
 .results-table tbody tr {
+  background: var(--bg2);
   border-bottom: 1px solid var(--border);
   transition: background 0.1s;
 }
@@ -657,7 +674,7 @@ textarea::placeholder {
   border-bottom: none;
 }
 .results-table tbody tr:hover {
-  background: var(--bg2);
+  background: var(--bg3);
 }
 .results-table tbody td {
   padding: 11px 14px;

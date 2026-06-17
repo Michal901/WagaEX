@@ -10,6 +10,7 @@
 :root {
   --bg: #0f1117;
   --bg2: #161b27;
+  --bg2-glass: rgba(22, 27, 39, 0.72);
   --bg3: #1e2535;
   --border: #2a3348;
   --border2: #3a4560;
@@ -30,6 +31,7 @@
 [data-theme="light"] {
   --bg: #f0f2f5;
   --bg2: #ffffff;
+  --bg2-glass: rgba(255, 255, 255, 0.78);
   --bg3: #e2e6ed;
   --border: #c0c8d8;
   --border2: #a0adc0;
@@ -52,23 +54,37 @@ body {
   display: flex;
 }
 
+/* ===== ANIMATED BACKGROUND ===== */
+#bgCanvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
 /* ===== LAYOUT ===== */
 .app {
   display: flex;
   width: 100%;
   height: 100vh;
+  position: relative;
+  z-index: 1;
 }
 .main {
   flex: 1;
   overflow-y: auto;
   padding: 32px 40px 32px;
-  background: var(--bg);
+  background: transparent;
 }
 
 /* ===== SIDEBAR ===== */
 .sidebar {
   width: var(--sidebar);
-  background: var(--bg2);
+  background: var(--bg2-glass);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
@@ -197,6 +213,24 @@ body {
   gap: 8px;
   margin-top: auto;
   padding: 12px 14px;
+}
+.switches-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  flex-wrap: wrap;
+}
+.switches-row .theme-switch-wrap {
+  margin-top: 0;
+  padding: 10px 4px;
+}
+.switch-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  flex-shrink: 0;
 }
 .theme-switch-icon {
   font-size: 14px;
@@ -1614,6 +1648,12 @@ textarea::placeholder {
 .norma-input.prefilled {
   border-color: var(--accent2);
   color: var(--accent);
+}
+.norma-input.error,
+#normaBudzet.error,
+#normaLimitWagi.error {
+  border-color: var(--danger);
+  background: rgba(255, 79, 79, 0.1);
 }
 
 .norma-limity {

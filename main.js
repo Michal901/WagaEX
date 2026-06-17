@@ -18,7 +18,9 @@ import { StorageManager } from "./src/js/storage.js";
 import { toast } from "./src/js/utils.js";
 
 import {
+  dodajNormeOptymalnaDoSesji,
   obliczNormeOptymalna,
+  przywrocStanNormy,
   wczytajProdukty,
   wyczyscNorme,
 } from "./src/js/norma.js";
@@ -64,6 +66,7 @@ window.togglePodsekcja = togglePodsekcja;
 window.usunSesje = (id) => usunSesje(appState, id);
 window.drukujHistoriaSesje = (id) => drukujHistoriaSesje(appState, id);
 window.eksportujHistoriaDoAHK = (id) => eksportujHistoriaDoAHK(appState, id);
+window.dodajNormeOptymalnaDoSesji = () => dodajNormeOptymalnaDoSesji(appState);
 window.kopijHistoriaSesje = (id) => kopijHistoriaSesje(appState, id);
 window.kopijHistoriaNorme = (sesjaId, normaId) => kopijHistoriaNorme(appState, sesjaId, normaId);
 window.usunZBazy = (key) => usunZBazy(appState, key);
@@ -185,6 +188,19 @@ async function init() {
     }
     animateLogoSparks();
   }
+
+  // ==========================
+  // ANIMOWANE TŁO (constellation) + przełącznik
+  // ==========================
+  bgAktywna = (localStorage.getItem("wagaex_anim") || "on") !== "off";
+  const animCheckbox = document.getElementById("btnAnim");
+  if (animCheckbox) {
+    animCheckbox.checked = bgAktywna;
+    animCheckbox.addEventListener("change", () =>
+      setBgAnimacja(animCheckbox.checked),
+    );
+  }
+  initBackgroundFX();
 
   // ==========================
   // NAVIGATION
@@ -323,6 +339,9 @@ async function init() {
     .getElementById("btnNormaWyczysc")
     .addEventListener("click", () => wyczyscNorme());
 
+  // Przywróć ostatni stan zakładki Norma optymalna (localStorage)
+  przywrocStanNormy(appState);
+
   // ==========================
   // THEME TOGGLE
   // ==========================
@@ -361,6 +380,140 @@ async function init() {
   // ==========================
   renderBaze(appState);
   aktualizujBadge(appState);
+}
+
+// ==========================
+// ANIMOWANE TŁO – pole dryfujących cząsteczek + linie (constellation)
+// ==========================
+let bgRafId = null; // id pętli animacji (null = zatrzymana)
+let bgAktywna = true; // czy animacja ma działać
+let bgStart = null; // funkcja startująca pętlę (ustawiana w initBackgroundFX)
+
+// Włącz/wyłącz animację tła i zapamiętaj wybór.
+function setBgAnimacja(on) {
+  bgAktywna = on;
+  try {
+    localStorage.setItem("wagaex_anim", on ? "on" : "off");
+  } catch {
+    // tryb prywatny — ignorujemy
+  }
+
+  if (on) {
+    bgStart?.();
+  } else {
+    if (bgRafId) cancelAnimationFrame(bgRafId);
+    bgRafId = null;
+    const canvas = document.getElementById("bgCanvas");
+    if (canvas) {
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  }
+}
+
+function initBackgroundFX() {
+  const canvas = document.getElementById("bgCanvas");
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+  let W = 0,
+    H = 0,
+    dpr = 1;
+  let czastki = [];
+  const DYSTANS = 140; // maks. odległość łączenia liniami (px)
+
+  function nowaCzastka() {
+    return {
+      x: Math.random() * W,
+      y: Math.random() * H,
+      vx: (Math.random() - 0.5) * 0.25,
+      vy: (Math.random() - 0.5) * 0.25,
+      r: Math.random() * 1.6 + 0.6,
+      tw: Math.random() * Math.PI * 2, // faza migotania
+    };
+  }
+
+  function resize() {
+    dpr = window.devicePixelRatio || 1;
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = W + "px";
+    canvas.style.height = H + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    // Gęstość zależna od powierzchni ekranu (z rozsądnymi limitami)
+    const ile = Math.max(45, Math.min(110, Math.round((W * H) / 22000)));
+    czastki = Array.from({ length: ile }, nowaCzastka);
+  }
+
+  function kolorAkcentu() {
+    return (
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--accent")
+        .trim() || "#00d4a0"
+    );
+  }
+
+  function klatka() {
+    if (!bgAktywna) {
+      bgRafId = null;
+      return;
+    }
+    ctx.clearRect(0, 0, W, H);
+    const kolor = kolorAkcentu();
+
+    // Linie między bliskimi cząsteczkami
+    ctx.strokeStyle = kolor;
+    ctx.lineWidth = 1;
+    for (let i = 0; i < czastki.length; i++) {
+      const a = czastki[i];
+      a.x += a.vx;
+      a.y += a.vy;
+      a.tw += 0.02;
+
+      // Zawijanie na krawędziach
+      if (a.x < -10) a.x = W + 10;
+      else if (a.x > W + 10) a.x = -10;
+      if (a.y < -10) a.y = H + 10;
+      else if (a.y > H + 10) a.y = -10;
+
+      for (let j = i + 1; j < czastki.length; j++) {
+        const b = czastki[j];
+        const dx = a.x - b.x;
+        const dy = a.y - b.y;
+        const d = Math.hypot(dx, dy);
+        if (d < DYSTANS) {
+          ctx.globalAlpha = (1 - d / DYSTANS) * 0.2;
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // Migoczące punkty
+    ctx.fillStyle = kolor;
+    for (const p of czastki) {
+      ctx.globalAlpha = 0.5 + Math.sin(p.tw) * 0.3;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.globalAlpha = 1;
+    bgRafId = requestAnimationFrame(klatka);
+  }
+
+  bgStart = () => {
+    if (!bgRafId) bgRafId = requestAnimationFrame(klatka);
+  };
+
+  window.addEventListener("resize", resize);
+  resize();
+  if (bgAktywna) bgStart();
 }
 
 // ==========================

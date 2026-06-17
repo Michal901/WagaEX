@@ -4,11 +4,18 @@
 // maksymalizujące łączną wagę w ramach budżetu i limitu wagi.
 
 import { rozwiazKnapsack } from "./knapsack.js";
+import { aktualizujBadge, renderSesjaChips } from "./ui.js";
 import { esc, toast } from "./utils.js";
 
 // Stan modułu — wiersze wczytane z wklejonego tekstu.
 // { nazwa, kod, ilosc, waga (podpowiedź z bazy lub null) }
 let wiersze = [];
+
+// Ostatni obliczony wynik (produkty gotowe do dodania do sesji) i referencja appState.
+let ostatniWynik = null;
+let aktualnyAppState = null;
+
+const STORAGE_KEY = "wagaex_norma_stan";
 
 // ==========================
 // PARSOWANIE LINII (nazwa/kod + ilość)
@@ -99,6 +106,7 @@ function wykryjKod(tekst) {
 // WCZYTANIE PRODUKTÓW Z TEKSTU
 // ==========================
 export function wczytajProdukty(appState) {
+  aktualnyAppState = appState;
   const text = document.getElementById("normaInput").value.trim();
   if (!text) {
     toast("Wklej listę produktów do pola tekstowego", true);
@@ -135,6 +143,7 @@ export function wczytajProdukty(appState) {
   }
 
   renderWiersze();
+  zapiszStan();
   document.getElementById("norma-wiersze-wrap").style.display = "block";
   document.getElementById("norma-wynik-wrap").style.display = "none";
 
@@ -158,11 +167,15 @@ function renderWiersze() {
       const wagaHint = w.waga != null ? "Podpowiedź (z linii lub bazy) — możesz zmienić" : "Wpisz wagę";
       const cenaVal = w.cena != null ? w.cena : "";
       const cenaHint = w.cena != null ? "Cena z wklejonej linii — możesz zmienić" : "Wpisz cenę";
+      const iloscVal = w.ilosc != null ? w.ilosc : "";
       return `<tr>
         <td class="mono" style="color:var(--text3);font-size:11px">${i + 1}</td>
         <td>${esc(w.nazwa)}</td>
         <td class="mono" style="color:var(--accent);font-weight:600">${esc(w.kod || "—")}</td>
-        <td class="center mono"><strong>${w.ilosc}</strong></td>
+        <td class="center">
+          <input type="text" inputmode="decimal" class="norma-input" style="width:64px"
+                 data-i="${i}" data-f="ilosc" value="${iloscVal}" placeholder="0" title="Dostępna ilość sztuk" />
+        </td>
         <td class="center">
           <input type="text" inputmode="decimal" class="norma-input${w.cena != null ? " prefilled" : ""}"
                  data-i="${i}" data-f="cena" value="${cenaVal}" placeholder="0,00" title="${cenaHint}" />
@@ -189,6 +202,22 @@ function renderWiersze() {
       </thead>
       <tbody>${rows}</tbody>
     </table>`;
+
+  // Nasłuchiwacze pól: aktualizacja stanu, czyszczenie podświetlenia błędu, Enter = oblicz.
+  document.querySelectorAll("#norma-wiersze .norma-input").forEach((inp) => {
+    inp.addEventListener("input", () => {
+      const i = Number(inp.dataset.i);
+      wiersze[i][inp.dataset.f] = odczytaj(inp);
+      inp.classList.remove("error");
+      zapiszStan();
+    });
+    inp.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        obliczNormeOptymalna(aktualnyAppState);
+      }
+    });
+  });
 }
 
 // Odczyt liczby z pola (obsługa przecinka).
@@ -201,37 +230,55 @@ function odczytaj(input) {
 // OBLICZENIE NORMY OPTYMALNEJ
 // ==========================
 export function obliczNormeOptymalna(appState) {
+  aktualnyAppState = appState;
   if (!wiersze.length) {
     toast("Najpierw wczytaj produkty", true);
     return;
   }
 
-  const budzet = odczytaj(document.getElementById("normaBudzet"));
-  const limitWagi = odczytaj(document.getElementById("normaLimitWagi"));
+  const budzetEl = document.getElementById("normaBudzet");
+  const limitEl = document.getElementById("normaLimitWagi");
+  const budzet = odczytaj(budzetEl);
+  const limitWagi = odczytaj(limitEl);
+
+  budzetEl.classList.remove("error");
+  limitEl.classList.remove("error");
 
   if (budzet == null || budzet <= 0) {
     toast("Podaj budżet większy od 0", true);
+    budzetEl.classList.add("error");
+    budzetEl.focus();
     return;
   }
   if (limitWagi == null || limitWagi <= 0) {
     toast("Podaj limit wagi większy od 0", true);
+    limitEl.classList.add("error");
+    limitEl.focus();
     return;
   }
 
-  // Wczytaj aktualne ceny i wagi z pól, zaktualizuj stan.
+  // Wczytaj aktualne ilości, ceny i wagi z pól, zaktualizuj stan.
   const inputs = document.querySelectorAll("#norma-wiersze .norma-input");
   inputs.forEach((inp) => {
     const i = Number(inp.dataset.i);
-    const val = odczytaj(inp);
-    if (inp.dataset.f === "cena") wiersze[i].cena = val;
-    else wiersze[i].waga = val;
+    wiersze[i][inp.dataset.f] = odczytaj(inp);
   });
 
-  const braki = wiersze.filter((w) => w.cena == null || w.cena <= 0 || w.waga == null || w.waga <= 0);
-  if (braki.length) {
-    toast(`Uzupełnij cenę i wagę dla wszystkich produktów (brakuje: ${braki.length})`, true);
+  // Walidacja braków z podświetleniem konkretnych pól.
+  let braki = 0;
+  inputs.forEach((inp) => {
+    const i = Number(inp.dataset.i);
+    const v = wiersze[i][inp.dataset.f];
+    const zly = v == null || v <= 0;
+    inp.classList.toggle("error", zly);
+    if (zly) braki++;
+  });
+  if (braki) {
+    toast(`Uzupełnij podświetlone pola — ilość, cena i waga > 0 (brakuje: ${braki})`, true);
     return;
   }
+
+  zapiszStan();
 
   // Rozbij ilości na pojedyncze sztuki — każda sztuka to osobny item.
   const items = [];
@@ -258,6 +305,7 @@ function renderWynik(items, wynik, budzet, limitWagi) {
   const wrap = document.getElementById("norma-wynik-wrap");
 
   if (!wynik.wybrane.length) {
+    ostatniWynik = null;
     document.getElementById("norma-wynik-tabela").innerHTML =
       '<div class="baza-empty"><div class="big">∅</div>Nie udało się dobrać żadnego produktu w ramach podanych limitów.</div>';
     document.getElementById("norma-karty").innerHTML = "";
@@ -271,14 +319,13 @@ function renderWynik(items, wynik, budzet, limitWagi) {
     const ref = items[itemIdx].ref;
     const w = wiersze[ref];
     if (!agregat.has(ref)) {
-      agregat.set(ref, { nazwa: w.nazwa, kod: w.kod, cena: w.cena, waga: w.waga, ilosc: 0 });
+      agregat.set(ref, { ref, nazwa: w.nazwa, kod: w.kod, cena: w.cena, waga: w.waga, ilosc: 0 });
     }
     agregat.get(ref).ilosc += 1;
   });
 
-  const lista = Array.from(agregat.values()).sort(
-    (a, b) => b.waga * b.ilosc - a.waga * a.ilosc,
-  );
+  // Zachowaj kolejność z wklejonej listy (kolejność wierszy źródłowych).
+  const lista = Array.from(agregat.values()).sort((a, b) => a.ref - b.ref);
 
   const rows = lista
     .map(
@@ -296,6 +343,18 @@ function renderWynik(items, wynik, budzet, limitWagi) {
     .join("");
 
   const sztukRazem = lista.reduce((s, p) => s + p.ilosc, 0);
+
+  // Zapisz wynik w formacie gotowym do dodania do sesji.
+  ostatniWynik = {
+    produkty: lista.map((p) => ({
+      nazwa: p.nazwa,
+      kod: p.kod,
+      waga: p.waga,
+      ilosc: p.ilosc,
+      iloscX: p.ilosc,
+    })),
+    totalKg: Number(wynik.totalWaga.toFixed(2)),
+  };
 
   document.getElementById("norma-wynik-tabela").innerHTML = `
     <table class="results-table">
@@ -322,7 +381,10 @@ function renderWynik(items, wynik, budzet, limitWagi) {
           <td class="right mono">${wynik.totalWaga.toFixed(2)} kg</td>
         </tr>
       </tfoot>
-    </table>`;
+    </table>
+    <div class="norma-actions" style="margin-top:14px;display:flex;justify-content:flex-end">
+      <button class="btn-primary" onclick="dodajNormeOptymalnaDoSesji()">+ Dodaj do sesji</button>
+    </div>`;
 
   // Karty podsumowania.
   const pozostalyBudzet = budzet - wynik.totalKoszt;
@@ -349,14 +411,106 @@ function kartaHTML(label, wartosc, sub, accent = false) {
 }
 
 // ==========================
+// DODAJ DOBRANĄ NORMĘ DO SESJI
+// ==========================
+export function dodajNormeOptymalnaDoSesji(appState) {
+  if (!ostatniWynik || !ostatniWynik.produkty.length) {
+    toast("Najpierw oblicz normę optymalną", true);
+    return;
+  }
+
+  if (appState.biezacaSesja.length + 1 > 8) {
+    toast("Brak miejsca — sesja może mieć maks. 8 norm", true);
+    return;
+  }
+
+  const nr = appState.biezacaSesja.length + 1;
+  const produkty = ostatniWynik.produkty.map((p) => ({ ...p }));
+
+  appState.biezacaSesja.push({
+    id: crypto.randomUUID(),
+    nr,
+    label: `Norma ${nr}`,
+    multiplier: 1,
+    produkty,
+    totalKg: ostatniWynik.totalKg,
+  });
+
+  // Aktualizuj bazę produktów (jak w kalkulatorze).
+  appState.updateBaza(
+    produkty.map((p) => ({ ...p })),
+    new Date().toISOString(),
+  );
+
+  aktualizujBadge(appState);
+  renderSesjaChips(appState);
+
+  toast(
+    `✓ Dodano normę do sesji (${ostatniWynik.totalKg.toFixed(2)} kg) — sprawdź w Kalkulatorze / Zbiorówce`,
+  );
+}
+
+// ==========================
+// ZAPIS / PRZYWRACANIE STANU (localStorage)
+// ==========================
+function zapiszStan() {
+  try {
+    const stan = {
+      input: document.getElementById("normaInput")?.value || "",
+      budzet: document.getElementById("normaBudzet")?.value || "",
+      limit: document.getElementById("normaLimitWagi")?.value || "",
+      wiersze,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(stan));
+  } catch {
+    // brak miejsca / tryb prywatny — ignorujemy
+  }
+}
+
+export function przywrocStanNormy(appState) {
+  aktualnyAppState = appState;
+
+  // Zapisuj budżet i limit przy każdej zmianie.
+  const budzetEl = document.getElementById("normaBudzet");
+  const limitEl = document.getElementById("normaLimitWagi");
+  budzetEl?.addEventListener("input", zapiszStan);
+  limitEl?.addEventListener("input", zapiszStan);
+
+  let stan;
+  try {
+    stan = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+  } catch {
+    stan = null;
+  }
+  if (!stan) return;
+
+  const inp = document.getElementById("normaInput");
+  if (inp && stan.input) inp.value = stan.input;
+  if (budzetEl && stan.budzet) budzetEl.value = stan.budzet;
+  if (limitEl && stan.limit) limitEl.value = stan.limit;
+
+  if (Array.isArray(stan.wiersze) && stan.wiersze.length) {
+    wiersze = stan.wiersze;
+    renderWiersze();
+    document.getElementById("norma-wiersze-wrap").style.display = "block";
+  }
+}
+
+// ==========================
 // WYCZYŚĆ
 // ==========================
 export function wyczyscNorme() {
   wiersze = [];
+  ostatniWynik = null;
   document.getElementById("normaInput").value = "";
   document.getElementById("normaBudzet").value = "";
   document.getElementById("normaLimitWagi").value = "";
   document.getElementById("norma-wiersze").innerHTML = "";
   document.getElementById("norma-wiersze-wrap").style.display = "none";
   document.getElementById("norma-wynik-wrap").style.display = "none";
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // ignorujemy
+  }
 }

@@ -235,7 +235,7 @@ export function renderWyniki(produkty, mult, appState) {
       <td class="mono" style="color:var(--text3);font-size:11px">${i + 1}</td>
       <td>${esc(p.nazwa)}</td>
       <td class="center mono editable-cell" data-field="ilosc" data-index="${i}" title="Kliknij aby edytować">${ilCell}</td>
-      <td class="mono" style="color:var(--accent);font-weight:600">${esc(p.kod || "—")}</td>
+      <td class="mono editable-cell" data-field="kod" data-index="${i}" style="color:var(--accent);font-weight:600" title="Kliknij aby edytować kod">${esc(p.kod || "—")}</td>
       <td class="center mono editable-cell" data-field="waga" data-index="${i}" title="Kliknij aby edytować">${p.waga} kg${wagaWarn}</td>
       <td class="right mono"><strong>${wXN.toFixed(2)} kg</strong></td>
     </tr>`;
@@ -288,31 +288,37 @@ export function renderWyniki(produkty, mult, appState) {
       const field = cell.dataset.field;
       const idx = parseInt(cell.dataset.index);
       const p = produkty[idx];
-      const currentVal = field === "ilosc" ? p.ilosc : p.waga;
-      
+      const currentVal =
+        field === "ilosc" ? p.ilosc : field === "waga" ? p.waga : p.kod || "";
+
       const input = document.createElement("input");
       input.type = "text";
       input.className = "inline-edit";
       input.value = currentVal;
-      input.style.width = "60px";
+      input.style.width = field === "kod" ? "100px" : "60px";
       cell.innerHTML = "";
       cell.appendChild(input);
       input.focus();
       input.select();
 
       const commit = () => {
-        const raw = input.value.trim().replace(",", ".");
-        const val = parseFloat(raw);
-        if (isNaN(val) || val <= 0) {
-          // Przywróć starą wartość
-          renderWyniki(produkty, mult, appState);
-          return;
-        }
-        if (field === "ilosc") {
-          p.ilosc = val;
-          p.iloscX = val * mult;
+        if (field === "kod") {
+          // Kod to dowolny tekst (może być pusty)
+          p.kod = input.value.trim();
         } else {
-          p.waga = val;
+          const raw = input.value.trim().replace(",", ".");
+          const val = parseFloat(raw);
+          if (isNaN(val) || val <= 0) {
+            // Przywróć starą wartość
+            renderWyniki(produkty, mult, appState);
+            return;
+          }
+          if (field === "ilosc") {
+            p.ilosc = val;
+            p.iloscX = val * mult;
+          } else {
+            p.waga = val;
+          }
         }
         // Przelicz i przerenderuj
         if (appState && appState.aktualneWyniki) {
@@ -528,6 +534,33 @@ export function eksportujDoAHK(appState) {
     return;
   }
 
+  pobierzPlikAHK(budujTekstAHK(normy), "normy_ahk.txt");
+  toast("✓ Wyeksportowano normy do pliku normy_ahk.txt");
+}
+
+// Eksportuj normy z zapisanej sesji w historii do pliku dla AutoHotkey
+export function eksportujHistoriaDoAHK(appState, id) {
+  const s = appState.historia.find((x) => x.id === id);
+  if (!s) {
+    toast("Sesja nie znaleziona", true);
+    return;
+  }
+
+  const normy = (s.normy || []).filter(
+    (n) => n.produkty && n.produkty.length > 0,
+  );
+
+  if (!normy.length) {
+    toast("Brak norm z produktami do eksportu", true);
+    return;
+  }
+
+  pobierzPlikAHK(budujTekstAHK(normy), "normy_ahk.txt");
+  toast("✓ Wyeksportowano normy do pliku normy_ahk.txt");
+}
+
+// Buduje tekst w formacie AHK: "NORMA" + linie "kod,ilosc"
+function budujTekstAHK(normy) {
   const linie = [];
   for (const n of normy) {
     linie.push("NORMA");
@@ -539,19 +572,20 @@ export function eksportujDoAHK(appState) {
       linie.push(`${p.kod || ""},${ilosc}`);
     }
   }
+  return linie.join("\n");
+}
 
-  const tekst = linie.join("\n");
+// Pobiera podany tekst jako plik .txt
+function pobierzPlikAHK(tekst, nazwa) {
   const blob = new Blob([tekst], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "normy_ahk.txt";
+  a.download = nazwa;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-
-  toast("✓ Wyeksportowano normy do pliku normy_ahk.txt");
 }
 
 export { aktualizujHint, getMnoznik, wyczyscFormularz, zmienMnoznik };

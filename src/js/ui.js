@@ -7,6 +7,7 @@ const ICON = {
   trash: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>',
   copy: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
   trashSm: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+  download: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
 };
 
 export function renderSesjaChips(appState) {
@@ -610,7 +611,11 @@ export function renderHistorie(appState) {
             </div>
             <span class="sesja-toggle" id="tog-sub-session-${safeId}">›</span>
           </div>
-          <div class="sesja-subbody" id="body-sub-session-${safeId}">${sesjaNormy}</div>
+          <div class="sesja-subbody" id="body-sub-session-${safeId}">${sesjaNormy}
+            <div class="sesja-actions">
+              <button class="btn-secondary" onclick="eksportujHistoriaDoAHK('${safeId}')">${ICON.download} Eksportuj do AHK</button>
+            </div>
+          </div>
         </div>
 
         <div class="sesja-section">
@@ -849,7 +854,7 @@ export function renderBaze(appState) {
       return `
         <tr>
           <td>${i + 1}</td>
-          <td class="mono" style="color:var(--accent);font-weight:600">${esc(p.kod || "—")}</td>
+          <td class="mono editable-cell" data-key="${safeId}" data-field="kod" style="color:var(--accent);font-weight:600" title="Kliknij aby edytować kod">${esc(p.kod || "—")}</td>
           <td>${esc(p.nazwa)}</td>
           <td class="center">${p.waga} kg</td>
           <td class="center">${d}</td>
@@ -878,6 +883,57 @@ export function renderBaze(appState) {
       <tbody>${rows}</tbody>
     </table>
   `;
+
+  // Edycja kodu inline
+  el.querySelectorAll(".editable-cell[data-field='kod']").forEach((cell) => {
+    cell.addEventListener("click", () => {
+      if (cell.querySelector("input")) return; // już edytowane
+      const key = decodeURIComponent(cell.dataset.key);
+      const produkt = appState.baza[key];
+      if (!produkt) return;
+
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "inline-edit";
+      input.value = produkt.kod || "";
+      input.style.width = "120px";
+      cell.innerHTML = "";
+      cell.appendChild(input);
+      input.focus();
+      input.select();
+
+      let zakonczono = false;
+      const commit = async () => {
+        if (zakonczono) return;
+        zakonczono = true;
+        const nowyKod = input.value.trim();
+        if (nowyKod === (produkt.kod || "")) {
+          renderBaze(appState);
+          return;
+        }
+        produkt.kod = nowyKod;
+        try {
+          await appState.saveToStorage();
+          toast(`✓ Kod zaktualizowany: ${nowyKod || "—"}`);
+        } catch {
+          toast("Błąd zapisu kodu", true);
+        }
+        renderBaze(appState);
+      };
+
+      input.addEventListener("blur", commit);
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          commit();
+        }
+        if (e.key === "Escape") {
+          zakonczono = true;
+          renderBaze(appState);
+        }
+      });
+    });
+  });
 }
 
 export async function usunZBazy(appState, key) {

@@ -17,6 +17,10 @@ import { AppState } from "./src/js/state.js";
 import { StorageManager } from "./src/js/storage.js";
 import { toast } from "./src/js/utils.js";
 import { initPalety, zastosujPalete } from "./src/js/palettes.js";
+import {
+  initBackgrounds,
+  setEnabled as bgSetEnabled,
+} from "./src/js/backgrounds.js";
 
 import {
   dodajNormeOptymalnaDoSesji,
@@ -384,6 +388,15 @@ async function init() {
   initPalety();
 
   // ==========================
+  // TŁA ANIMOWANE (BG)
+  // ==========================
+  initBackgrounds({
+    canvas: document.getElementById("bgCanvas"),
+    enabled: bgAktywna,
+    constellation: bgController,
+  });
+
+  // ==========================
   // SCROLL TO TOP (Baza)
   // ==========================
   const mainEl = document.querySelector(".main");
@@ -414,6 +427,7 @@ async function init() {
 // ==========================
 let bgRafId = null; // id pętli animacji (null = zatrzymana)
 let bgAktywna = true; // czy animacja ma działać
+let bgController = null; // kontroler konstelacji dla menedżera teł (backgrounds.js)
 let bgStart = null; // funkcja startująca pętlę (ustawiana w initBackgroundFX)
 let bgPoof = null; // efekt "poof" od punktu (ustawiany w initBackgroundFX)
 let bgWidocznosc = null; // stopniowe pojawianie/znikanie (ustawiane w initBackgroundFX)
@@ -427,9 +441,9 @@ function setBgAnimacja(on) {
     // tryb prywatny — ignorujemy
   }
 
-  // Pojawianie/znikanie cząstek po kolei (nie wszystkie na raz).
-  // Pętla sama się zatrzyma i wyczyści, gdy wszystkie znikną.
-  bgWidocznosc?.(on);
+  // Włączenie/wyłączenie deleguj do menedżera teł — sam zdecyduje, czy
+  // pokazać konstelację (z fade), czy uruchomić/zatrzymać inny efekt.
+  bgSetEnabled(on);
 }
 
 // ==========================
@@ -483,6 +497,9 @@ function initBackgroundFX() {
   let W = 0,
     H = 0,
     dpr = 1;
+  // Gdy wybrane jest inne tło, konstelacja jest "zawieszona" (nie rysuje,
+  // a jej nasłuch resize nie rusza canvasu zajętego przez inny efekt).
+  let suspended = false;
   let czastki = [];
   let meteory = [];
   let blysk = 0; // chwilowy rozbłysk "poof" (1 → 0)
@@ -525,6 +542,7 @@ function initBackgroundFX() {
   }
 
   function resize() {
+    if (suspended) return;
     dpr = window.devicePixelRatio || 1;
     W = window.innerWidth;
     H = window.innerHeight;
@@ -771,13 +789,32 @@ function initBackgroundFX() {
     mx = my = null;
   });
   window.addEventListener("pointerdown", (e) => {
-    if (bgAktywna) wybuch(e.clientX, e.clientY);
+    if (bgAktywna && !suspended) wybuch(e.clientX, e.clientY);
   });
 
   window.addEventListener("resize", resize);
   resize();
-  // Start: jeśli animacja włączona, cząstki pojawiają się stopniowo
-  if (bgAktywna) bgWidocznosc(true);
+
+  // Kontroler dla menedżera teł (backgrounds.js): pozwala zawiesić konstelację,
+  // gdy aktywne jest inne tło, oraz wznowić ją po powrocie.
+  bgController = {
+    setVisible: (on) => {
+      suspended = false;
+      bgWidocznosc(on);
+    },
+    hardStop: () => {
+      suspended = true;
+      if (bgRafId) {
+        cancelAnimationFrame(bgRafId);
+        bgRafId = null;
+      }
+      ctx.clearRect(0, 0, W, H);
+    },
+    resize: () => {
+      suspended = false;
+      resize();
+    },
+  };
 }
 
 // ==========================

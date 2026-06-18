@@ -256,6 +256,7 @@ body {
 .palette-wrap {
   display: flex;
   align-items: center;
+  gap: 6px;
   padding: 10px 4px;
 }
 .palette-btn {
@@ -327,6 +328,56 @@ body {
 }
 .palette-swatch.selected {
   border-color: var(--text);
+}
+
+/* ===== MENU WYBORU TŁA ===== */
+.bg-pop {
+  position: fixed;
+  z-index: 1000;
+  display: none;
+  min-width: 170px;
+  padding: 8px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+.bg-pop.open {
+  opacity: 1;
+  transform: translateY(0);
+}
+.bg-pop-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text3);
+  padding: 4px 8px 8px;
+}
+.bg-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border: none;
+  background: none;
+  color: var(--text2);
+  font-size: 13px;
+  font-family: var(--sans);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.bg-item:hover {
+  background: var(--bg3);
+  color: var(--text);
+}
+.bg-item.selected {
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-weight: 600;
 }
 .theme-switch-icon {
   font-size: 14px;

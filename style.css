@@ -228,12 +228,17 @@ body {
   margin-top: auto;
   padding: 12px 14px;
 }
+.sidebar-bottom {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
 .switches-row {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 8px;
-  margin-top: auto;
   flex-wrap: wrap;
 }
 .switches-row .theme-switch-wrap {
@@ -245,6 +250,83 @@ body {
   height: 20px;
   background: var(--border);
   flex-shrink: 0;
+}
+
+/* ===== PALETY KOLORÓW (przycisk + popover) ===== */
+.palette-wrap {
+  display: flex;
+  align-items: center;
+  padding: 10px 4px;
+}
+.palette-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 26px;
+  background: none;
+  border: none;
+  color: var(--text2);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+.palette-btn:hover,
+.palette-btn[aria-expanded="true"] {
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+.palette-pop {
+  position: fixed;
+  z-index: 1000;
+  display: none;
+  min-width: 180px;
+  padding: 12px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+.palette-pop.open {
+  opacity: 1;
+  transform: translateY(0);
+}
+.palette-section + .palette-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.palette-section-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text3);
+  margin-bottom: 8px;
+}
+.palette-swatches {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.palette-swatch {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--sw1), var(--sw2));
+  cursor: pointer;
+  box-shadow: 0 0 0 1px var(--border) inset;
+  transition: transform 0.12s ease, border-color 0.12s ease;
+}
+.palette-swatch:hover {
+  transform: scale(1.12);
+}
+.palette-swatch.selected {
+  border-color: var(--text);
 }
 .theme-switch-icon {
   font-size: 14px;

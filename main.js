@@ -16,6 +16,7 @@ import {
 import { AppState } from "./src/js/state.js";
 import { StorageManager } from "./src/js/storage.js";
 import { toast } from "./src/js/utils.js";
+import { initPalety, zastosujPalete } from "./src/js/palettes.js";
 
 import {
   dodajNormeOptymalnaDoSesji,
@@ -372,8 +373,15 @@ async function init() {
       y: window.innerHeight - 60,
     };
     przelaczMotyw(next, p.x, p.y);
+    // Nałóż akcent palety zapisanej dla nowego motywu
+    zastosujPalete(next);
     punktKliku = null;
   });
+
+  // ==========================
+  // PALETY KOLORÓW
+  // ==========================
+  initPalety();
 
   // ==========================
   // SCROLL TO TOP (Baza)
